@@ -1,0 +1,10 @@
+digraph ATN {
+rankdir=LR;
+s43[fontsize=11, label="43", shape=doublecircle, fixedsize=true, width=.6];
+s245[fontsize=11,label="245", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s246[fontsize=11,label="246", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s42[fontsize=11,label="42", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s42 -> s245 [fontname="Times-Italic", label="&epsilon;"];
+s245 -> s246 [fontsize=11, fontname="Courier", arrowsize=.7, label = "NUM", arrowhead = normal];
+s246 -> s43 [fontname="Times-Italic", label="&epsilon;"];
+}
