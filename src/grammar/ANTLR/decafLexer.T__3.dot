@@ -2,9 +2,9 @@ digraph ATN {
 rankdir=LR;
 s68[fontsize=11, label="68", shape=doublecircle, fixedsize=true, width=.6];
 s67[fontsize=11,label="67", shape=circle, fixedsize=true, width=.55, peripheries=1];
-s203[fontsize=11,label="203", shape=circle, fixedsize=true, width=.55, peripheries=1];
-s204[fontsize=11,label="204", shape=circle, fixedsize=true, width=.55, peripheries=1];
-s67 -> s203 [fontname="Times-Italic", label="&epsilon;"];
-s203 -> s204 [fontsize=11, fontname="Courier", arrowsize=.7, label = "')'", arrowhead = normal];
-s204 -> s68 [fontname="Times-Italic", label="&epsilon;"];
+s205[fontsize=11,label="205", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s206[fontsize=11,label="206", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s67 -> s205 [fontname="Times-Italic", label="&epsilon;"];
+s205 -> s206 [fontsize=11, fontname="Courier", arrowsize=.7, label = "')'", arrowhead = normal];
+s206 -> s68 [fontname="Times-Italic", label="&epsilon;"];
 }

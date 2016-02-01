@@ -1,0 +1,21 @@
+digraph ATN {
+rankdir=LR;
+s45[fontsize=11, label="45", shape=doublecircle, fixedsize=true, width=.6];
+s288[fontsize=11,label="{&rarr;\n288\nd=26|{<p0>|<p1>}}", shape=record, fixedsize=false, peripheries=1];
+s289[fontsize=11,label="&larr;\n289", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s283[fontsize=11,label="283", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s44[fontsize=11,label="44", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s284[fontsize=11,label="284", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s285[fontsize=11,label="285", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s286[fontsize=11,label="286", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s287[fontsize=11,label="287", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s44 -> s288 [fontname="Times-Italic", label="&epsilon;"];
+s288:p0 -> s283 [fontname="Times-Italic", label="&epsilon;"];
+s288:p1 -> s287 [fontname="Times-Italic", label="&epsilon;"];
+s283 -> s284 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'('", arrowhead = normal];
+s287 -> s289 [fontsize=11, fontname="Courier", arrowsize=.7, label = "<literal>", arrowhead = normal];
+s284 -> s285 [fontsize=11, fontname="Courier", arrowsize=.7, label = "<plusOrMinus>", arrowhead = normal];
+s289 -> s45 [fontname="Times-Italic", label="&epsilon;"];
+s285 -> s286 [fontsize=11, fontname="Courier", arrowsize=.7, label = "')'", arrowhead = normal];
+s286 -> s289 [fontname="Times-Italic", label="&epsilon;"];
+}

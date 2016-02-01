@@ -8,6 +8,8 @@
 grammar decaf;
 
 
+
+
 //reglas
 
 program : 'class' 'Program' '{' (declaration)* '}'  ;
@@ -45,7 +47,7 @@ statement : 'if' '(' expression ')' block ( 'else' block )?
 
 location : (ID|ID '[' expression ']') ('.' location)?  ;
 
-expression : location | methodCall | literal | expression op expression | '-' expression | '!' expression | '('expression')'  ;
+expression : location | methodCall | literal | calc_op | expression op expression | '-' expression | '!' expression | '('expression')'  ;
 
 //methodCall :    ID '(' arg1 ')' ;
 methodCall :    ID '(' (arg (',' arg)*)? ')' ;
@@ -56,9 +58,28 @@ methodCall :    ID '(' (arg (',' arg)*)? ')' ;
 
 arg :   expression;
 
-op: arith_op | rel_op | eq_op | cond_op  ;
+//op: arith_op | rel_op | eq_op | cond_op  ;
+op:  rel_op | eq_op | cond_op  ;
 
 arith_op : '+' | '-' | '*' | '/' | '%' ;
+
+calc_op: plusOrMinus;
+
+plusOrMinus : plusOrMinus '+' multOrDiv
+            | plusOrMinus '-' multOrDiv
+            | multOrDiv;
+
+multOrDiv : multOrDiv '*' pow
+          | multOrDiv '/' pow
+          | pow;
+
+pow : unaryMinus;
+
+unaryMinus : '-' unaryMinus
+           | atom;
+
+atom : '(' plusOrMinus ')'
+     | literal;
 
 rel_op : '<' | '>' | '<=' | '>=' ;
 
@@ -81,7 +102,7 @@ ID : LETTER( LETTER | DIGIT)* ;
 NUM: DIGIT(DIGIT)* ;
 CHAR : '\'' ( ~['\r\n\\] | '\\' ['\\] ) '\'';
 WS : [ \s\t\r\n\f]+  ->channel(HIDDEN);
-
+COMMENTS: '//' ~('\r' | '\n' )*  -> channel(HIDDEN);
 /*
 Revisar uso para comentarios y espacios en blanco
 al momento error al tratar de parsear

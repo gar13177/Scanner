@@ -1,0 +1,17 @@
+digraph ATN {
+rankdir=LR;
+s43[fontsize=11, label="43", shape=doublecircle, fixedsize=true, width=.6];
+s278[fontsize=11,label="278", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s279[fontsize=11,label="279", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s280[fontsize=11,label="280", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s281[fontsize=11,label="{&rarr;\n281\nd=25|{<p0>|<p1>}}", shape=record, fixedsize=false, peripheries=1];
+s42[fontsize=11,label="42", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s282[fontsize=11,label="&larr;\n282", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s42 -> s281 [fontname="Times-Italic", label="&epsilon;"];
+s281:p0 -> s278 [fontname="Times-Italic", label="&epsilon;"];
+s281:p1 -> s280 [fontname="Times-Italic", label="&epsilon;"];
+s278 -> s279 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'-'", arrowhead = normal];
+s280 -> s282 [fontsize=11, fontname="Courier", arrowsize=.7, label = "<atom>", arrowhead = normal];
+s279 -> s282 [fontsize=11, fontname="Courier", arrowsize=.7, label = "<unaryMinus>", arrowhead = normal];
+s282 -> s43 [fontname="Times-Italic", label="&epsilon;"];
+}

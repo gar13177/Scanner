@@ -1,20 +1,20 @@
 digraph ATN {
 rankdir=LR;
 s8[fontsize=11, label="8", shape=doublecircle, fixedsize=true, width=.6];
-s99[fontsize=11,label="99", shape=circle, fixedsize=true, width=.55, peripheries=1];
-s100[fontsize=11,label="100", shape=circle, fixedsize=true, width=.55, peripheries=1];
 s101[fontsize=11,label="101", shape=circle, fixedsize=true, width=.55, peripheries=1];
 s102[fontsize=11,label="102", shape=circle, fixedsize=true, width=.55, peripheries=1];
 s7[fontsize=11,label="7", shape=circle, fixedsize=true, width=.55, peripheries=1];
 s103[fontsize=11,label="103", shape=circle, fixedsize=true, width=.55, peripheries=1];
 s104[fontsize=11,label="104", shape=circle, fixedsize=true, width=.55, peripheries=1];
 s105[fontsize=11,label="105", shape=circle, fixedsize=true, width=.55, peripheries=1];
-s7 -> s99 [fontname="Times-Italic", label="&epsilon;"];
-s99 -> s100 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'r'", arrowhead = normal];
-s100 -> s101 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'e'", arrowhead = normal];
-s101 -> s102 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'t'", arrowhead = normal];
-s102 -> s103 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'u'", arrowhead = normal];
-s103 -> s104 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'r'", arrowhead = normal];
-s104 -> s105 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'n'", arrowhead = normal];
-s105 -> s8 [fontname="Times-Italic", label="&epsilon;"];
+s106[fontsize=11,label="106", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s107[fontsize=11,label="107", shape=circle, fixedsize=true, width=.55, peripheries=1];
+s7 -> s101 [fontname="Times-Italic", label="&epsilon;"];
+s101 -> s102 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'r'", arrowhead = normal];
+s102 -> s103 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'e'", arrowhead = normal];
+s103 -> s104 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'t'", arrowhead = normal];
+s104 -> s105 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'u'", arrowhead = normal];
+s105 -> s106 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'r'", arrowhead = normal];
+s106 -> s107 [fontsize=11, fontname="Courier", arrowsize=.7, label = "'n'", arrowhead = normal];
+s107 -> s8 [fontname="Times-Italic", label="&epsilon;"];
 }
