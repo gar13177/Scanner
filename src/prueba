@@ -1,9 +1,8 @@
 class Program {
-   
-void main(){
-    int op;
-    op = 3+2*2+5;
-    return op;
-}
+
+int a;
+char b;
+boolean c[3];
+
 }
 //prueba

@@ -12,6 +12,7 @@ import javax.swing.JPanel;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.gui.TreeViewer;
 
@@ -50,12 +51,20 @@ public class Scanner {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         decafParser parser = new decafParser(tokens);
         
+        
+        
         ParseTree tree = parser.program();
+        
+        ParserRuleContext trr = (ParserRuleContext) tree;
+        Visitor visitor = new Visitor();
+        String result = visitor.visit(trr);
+        System.out.println(result);
+        
         List<String> lst = Arrays.asList(parser.getRuleNames());
         TreeViewer tr = new TreeViewer(lst,tree);
         
-        mainView mv = new mainView();
-        mv.setVisible(true);
+        //mainView mv = new mainView();
+        //mv.setVisible(true);
         //show AST in GUI
         JFrame frame = new JFrame("Antlr AST");
         JPanel panel = new JPanel();
@@ -65,7 +74,7 @@ public class Scanner {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setResizable(false);
-        frame.setVisible(false);
+        frame.setVisible(true);
     }
     
 }

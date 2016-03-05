@@ -61,7 +61,7 @@ arg :   expression;
 //op: arith_op | rel_op | eq_op | cond_op  ;
 op:  rel_op | eq_op | cond_op  ;
 
-arith_op : '+' | '-' | '*' | '/' | '%' ;
+//arith_op : '+' | '-' | '*' | '/' | '%' ;
 
 calc_op: plusOrMinus;
 
