@@ -1,3 +1,6 @@
+
+import java.util.Objects;
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -10,6 +13,7 @@
 public class Variable {
     private String _varId;
     private int _varType;
+    private boolean _isArray;
     
     /**
      * Init Variable empty
@@ -23,9 +27,22 @@ public class Variable {
      * @param vI variable name
      * @param vT variable type
      */
+    public Variable(String vI, int vT, boolean iA){
+        this._varId = vI;
+        this._varType = vT;
+        this._isArray = iA;
+    }
+    
     public Variable(String vI, int vT){
         this._varId = vI;
         this._varType = vT;
+        this._isArray = false;
+    }
+    
+    public Variable(Parameter pr){
+        this._varId = pr.getVarId();
+        this._varType = pr.getVarType();
+        this._isArray = pr.isIsArray();
     }
 
     /**
@@ -59,6 +76,36 @@ public class Variable {
     @Override
     public String toString(){
        return _varId + " - "+_varType;
+    }
+    
+    @Override
+    public boolean equals(Object o){
+        Variable v = (Variable)o;
+        boolean r = this._varId.equals(v.getVarId());
+        
+        return r;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 37 * hash + Objects.hashCode(this._varId);
+        hash = 37 * hash + this._varType;
+        return hash;
+    }
+
+    /**
+     * @return the _isArray
+     */
+    public boolean isIsArray() {
+        return _isArray;
+    }
+
+    /**
+     * @param _isArray the _isArray to set
+     */
+    public void setIsArray(boolean _isArray) {
+        this._isArray = _isArray;
     }
     
 }

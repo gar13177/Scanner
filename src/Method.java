@@ -1,3 +1,6 @@
+
+import java.util.Objects;
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -59,6 +62,22 @@ public class Method {
     @Override
     public String toString(){
         return _metID + " - "+ _metType;
+    }
+    
+    @Override
+    public boolean equals(Object o){
+        Method m = (Method)o;
+        boolean r = this._metID.equals(m.getMetID());
+        r = r && this._metType == m.getMetType();
+        return r;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 17 * hash + Objects.hashCode(this._metID);
+        hash = 17 * hash + this._metType;
+        return hash;
     }
     
     

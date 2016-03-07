@@ -7,8 +7,7 @@
  *
  * @author Kevin
  */
-public class Parameter {
-    private int _varType;
+public class Parameter extends Variable {
     private int _metIndex;
     
     /**
@@ -20,27 +19,31 @@ public class Parameter {
     
     /**
      * Init Parameter
+     * @param vT variable type
+     * @param mI method Index
+     */
+    public Parameter(String vI, int vT, boolean iA, int mI){
+        this.setVarId(vI);
+        this.setVarType(vT);
+        this.setIsArray(iA);
+        this._metIndex = mI;
+    }
+    
+    /**
+     * Init Parameter
      * @param vT variable Type
      * @param mI method Index
      */
-    public Parameter(int vT, int mI){
+    public Parameter(String vI, int vT, int mI){
+        this.setVarId(vI);
+        this.setVarType(vT);
+        this.setIsArray(false);
         this._metIndex = mI;
-        this._varType = vT;
     }
+    
+    
 
-    /**
-     * @return the _varType
-     */
-    public int getVarType() {
-        return _varType;
-    }
-
-    /**
-     * @param _varType the _varType to set
-     */
-    public void setVarType(int _varType) {
-        this._varType = _varType;
-    }
+    
 
     /**
      * @return the _metIndex
@@ -58,6 +61,16 @@ public class Parameter {
     
     @Override
     public String toString(){
-        return _varType + " - " + _metIndex;
+        return this.getVarType() + " - " + _metIndex;
     }
+    
+    public boolean equals(Object o){
+        Parameter pr = (Parameter)o;
+        boolean r = this._metIndex == pr.getMetIndex();
+        r = r && this.getVarId().equals(pr.getVarId());
+        return r;
+        
+    }
+
+    
 }

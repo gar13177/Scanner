@@ -12,14 +12,22 @@ import java.util.ArrayList;
  */
 public class Scope {
     
-    private ArrayList<Variable> _vars;
-    private ArrayList<Method> _methods;
-    private ArrayList<Parameter> _params;
+    private ArrayList<Variable> _vars;//variables definidas en este scope
+    private ArrayList<Method> _methods;//metodos definidos en este scope
+    private ArrayList<Parameter> _params;//tipo de variable definida para un metodo
+    private ArrayList<ArrayList<Variable>> _struct;//arraylist de struct declaradas, se guarda cada variable del struct
+    private ArrayList<StructVars> _structVars; //vinculacion de tipo struct "" al array anterior
     
     /**
      * Init Scope emtpy
      */
-    public Scope(){}
+    public Scope(){
+        _vars = new ArrayList();
+        _methods = new ArrayList();
+        _params = new ArrayList();
+        _struct = new ArrayList();
+        _structVars = new ArrayList();
+    }
     
     /**
      * Init Scope
@@ -27,10 +35,12 @@ public class Scope {
      * @param mt methods
      * @param pr parameters
      */
-    public Scope(ArrayList<Variable> vr, ArrayList<Method> mt, ArrayList<Parameter> pr){
+    public Scope(ArrayList<Variable> vr, ArrayList<Method> mt, ArrayList<Parameter> pr, ArrayList<ArrayList<Variable>> st, ArrayList<StructVars> stv){
         this._vars = vr;
         this._methods = mt;
         this._params = pr;
+        this._struct = st;
+        this._structVars = stv;
     }
 
     /**
@@ -108,6 +118,34 @@ public class Scope {
                 
         
         return val;
+    }
+
+    /**
+     * @return the _struct
+     */
+    public ArrayList<ArrayList<Variable>> getStruct() {
+        return _struct;
+    }
+
+    /**
+     * @param _struct the _struct to set
+     */
+    public void setStruct(ArrayList<ArrayList<Variable>> _struct) {
+        this._struct = _struct;
+    }
+
+    /**
+     * @return the _structVars
+     */
+    public ArrayList<StructVars> getStructVars() {
+        return _structVars;
+    }
+
+    /**
+     * @param _structVars the _structVars to set
+     */
+    public void setStructVars(ArrayList<StructVars> _structVars) {
+        this._structVars = _structVars;
     }
     
 }

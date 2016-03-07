@@ -1,8 +1,8 @@
 class Program {
 
+int metodo(){
 int a;
-char b;
-boolean c[3];
+}
 
 }
 //prueba
