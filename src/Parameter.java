@@ -61,7 +61,7 @@ public class Parameter extends Variable {
     
     @Override
     public String toString(){
-        return this.getVarType() + " - " + _metIndex;
+        return this.getVarType() + " - " + _metIndex+" - ";
     }
     
     public boolean equals(Object o){

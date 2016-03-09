@@ -1,7 +1,9 @@
 class Program {
 
-int metodo(){
-int a;
+char main(){
+    
+ return 5 ;
+
 }
 
 }

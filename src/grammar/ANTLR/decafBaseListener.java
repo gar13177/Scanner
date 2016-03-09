@@ -269,18 +269,6 @@ public class decafBaseListener implements decafListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterArith_op(@NotNull decafParser.Arith_opContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitArith_op(@NotNull decafParser.Arith_opContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterDeclaration(@NotNull decafParser.DeclarationContext ctx) { }
 	/**
 	 * {@inheritDoc}

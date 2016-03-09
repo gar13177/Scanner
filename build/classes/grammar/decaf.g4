@@ -14,13 +14,15 @@ grammar decaf;
 
 program : 'class' 'Program' '{' (declaration)* '}'  ;
 
-declaration: structDeclaration | varDeclaration | methodDeclaration  ;
+declaration:  structDeclaration |  varDeclaration | methodDeclaration ;
+
+varType: 'int' | 'char' | 'boolean' | 'struct' ID |  'void' |structDeclaration  ;
 
 varDeclaration: varType ID ';' | varType ID '[' NUM ']' ';'  ;
 
 structDeclaration : 'struct' ID '{' (varDeclaration)* '}'  ;
 
-varType: 'int' | 'char' | 'boolean' | 'struct' ID | structDeclaration | 'void'  ;
+
 
 //methodDeclaration : methodType ID '(' (parameter (',' parameter)*)* ')' block  ;
 methodDeclaration : methodType ID '(' (parameter (',' parameter)*)? ')' block  ;//cero o una en vez de estrella
@@ -36,7 +38,7 @@ block : '{' (varDeclaration)* (statement)* '}' ;
 statement : 'if' '(' expression ')' block ( 'else' block )? 
            | 'while' '(' expression ')' block
            //|'return' expressionA ';' 
-           | 'return' ( expression )?
+           | 'return' ( expression )? ';'
            | methodCall ';' 
            | block  
            | location '=' expression 
@@ -79,7 +81,9 @@ unaryMinus : '-' unaryMinus
            | atom;
 
 atom : '(' plusOrMinus ')'
-     | literal;
+     | literal
+     | location
+     | methodCall;
 
 rel_op : '<' | '>' | '<=' | '>=' ;
 
@@ -97,11 +101,11 @@ bool_literal : 'true' | 'false' ;
 
 //definicion
 fragment LETTER: ('a'..'z'|'A'..'Z') ;
-fragment DIGIT : '0'..'9' ;
+fragment DIGIT : ('0'..'9') ;
 ID : LETTER( LETTER | DIGIT)* ;
 NUM: DIGIT(DIGIT)* ;
 CHAR : '\'' ( ~['\r\n\\] | '\\' ['\\] ) '\'';
-WS : [ \s\t\r\n\f]+  ->channel(HIDDEN);
+WS : [ \t\r\n\f]+  ->channel(HIDDEN);
 COMMENTS: '//' ~('\r' | '\n' )*  -> channel(HIDDEN);
 /*
 Revisar uso para comentarios y espacios en blanco

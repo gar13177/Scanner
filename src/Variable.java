@@ -75,7 +75,8 @@ public class Variable {
     
     @Override
     public String toString(){
-       return _varId + " - "+_varType;
+       return _varId + " - "+_varType+" - "+_isArray;
+       
     }
     
     @Override

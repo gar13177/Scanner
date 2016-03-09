@@ -219,16 +219,6 @@ public interface decafListener extends ParseTreeListener {
 	 */
 	void exitPlusOrMinus(@NotNull decafParser.PlusOrMinusContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link decafParser#arith_op}.
-	 * @param ctx the parse tree
-	 */
-	void enterArith_op(@NotNull decafParser.Arith_opContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link decafParser#arith_op}.
-	 * @param ctx the parse tree
-	 */
-	void exitArith_op(@NotNull decafParser.Arith_opContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link decafParser#declaration}.
 	 * @param ctx the parse tree
 	 */

@@ -293,11 +293,322 @@ public class Visitor extends decafBaseVisitor<String> {
         if(!ctx.getChild(1).getText().equals("}")){//si tiene algo definido, evaluamos todo
             int i = 1;
             while (!ctx.getChild(i).getText().equals("}")){//mientras no sea el ultimo
+                
+                if (visit(ctx.getChild(i)).equals(_type.get(5))){//si esta en error
+                    _error.push(new Exception("Error in Block node "+i));
+                    //System.out.println("error");
+                    return _type.get(5);//retornamos tipo error
+                }
+                
+                /**
+                 * por el momento supongo que si retorna un error explicito, hay error.
+                 * de lo contrario todo esta bien
+                 */
+                
                 i++;
             }
         }
         return _type.get(0);//si no tiene nada definido, void
     }
     
+    @Override
+    public String visitStatement( StatementContext ctx){
+        if (ctx.getChild(0).getText().equals("if")){//si el primer hijo es un if
+            if (!visit(ctx.getChild(2)).equals(_type.get(3))){//si no es tipo booleano
+                _error.push(new Exception("Expression in 'if' not boolean"));
+                return _type.get(5);
+            }
+            
+            if (!visit(ctx.getChild(4)).equals(_type.get(0))){//problemas con el bloque
+                _error.push(new Exception("Block error in 'if'"));
+                return _type.get(5);
+            }
+            
+            if (ctx.getChildCount()>5){//quiere decir que tiene else
+                if (!visit(ctx.getChild(6)).equals(_type.get(0))){//si no es void
+                    _error.push(new Exception("Else Block error in 'if'"));
+                    return _type.get(5);
+                }
+                
+            }
+            
+            return _type.get(0);
+            
+        }else if (ctx.getChild(0).getText().equals("while")){//si es un while
+            if (!visit(ctx.getChild(2)).equals(_type.get(3))){//si no es tipo booleano
+                _error.push(new Exception("Expression in 'while' not boolean"));
+                return _type.get(5);
+            }
+            
+            if (!visit(ctx.getChild(4)).equals(_type.get(0))){//problemas con el bloque
+                _error.push(new Exception("Block error in 'while'"));
+                return _type.get(5);
+            }
+            
+            return _type.get(0);
+            
+            
+        }else if (ctx.getChild(0).getText().equals("return")){
+            String type = "";
+            if (ctx.getChildCount()>2){//existe expression
+                type = visit(ctx.getChild(1));//tomamos expression del return
+                
+                //revisar retorno type
+                Stack<Scope> temp = new Stack();
+                temp.addAll(_scope);
+                String methodType = getMethodReturn(temp);//retornammos el tipo del metodo
+                if (!methodType.equals(type)){//si el metodo no es igual al expression
+                    _error.push(new Exception("Method and return type mismatch"));//no concuerda tipo
+                    return _type.get(5);
+                }
+                
+                //como es correcto el tipo
+                _scope = setMethodReturn(_scope);//actualizamos scope con true para el metodo
+                return _type.get(0);//retornamos void
+            }else{
+                //revisar retorno void
+                Stack<Scope> temp = new Stack();
+                temp.addAll(_scope);
+                String methodType = getMethodReturn(temp);//retornammos el tipo del metodo
+                if (!methodType.equals(_type.get(0))){//si el metodo no es tipo void
+                    _error.push(new Exception("Method and return type mismatch"));//no concuerda tipo
+                    return _type.get(5);
+                }
+                
+                //como es correcto el tipo
+                _scope = setMethodReturn(_scope);//actualizamos scope con true para el metodo
+                return _type.get(0);//retornamos void
+                
+            }            
+            //no existe error y  tiene un tipo definido   
+            
+            
+        }else if (ctx.getChild(0) instanceof LocationContext){//si es una asignacion, se revisa primero
+            String locationType = visit(ctx.getChild(0));//tomamos el tipo de location
+            String expressionType = visit(ctx.getChild(2));//tomamos el tipo de expressionType
+            
+            if (locationType.equals(expressionType)){//si son variables del mismo tipo
+                return _type.get(0);//retornamos void para la asignacion
+            }
+            
+            //como es error
+            _error.push(new Exception("Location and expression type mismatch"));//no concuerda tipo
+            return _type.get(5);
+        }
+        
+        //si no es alguno de los anteriores, quedan:
+        //methodCall, block, expression dejando la posiblidad de retornar su tipo
+        if (ctx.getChildCount()>1){//como es mas de un hijo, no solo es ';'
+            return visit(ctx.getChild(0));//retornamos tipo de mehtod call
+        }
+        return _type.get(0);//retornamos void por default
+    }
     
+    /**
+     * retorna el tipo del primer metodo encontrado en los ambitos
+     * @param st stack(Scope)
+     * @return String
+     */
+    public String getMethodReturn(Stack<Scope> st){
+        if (st.size()==0) return _type.get(5);//si no tiene elementos, retornar error
+        
+        Scope sc = st.pop();//tomamos el ultimo scope definido
+        
+        if (sc.getMethods().size()>0){//quiere decir que tiene metodos definidos
+            //dado que un bloque es tiene return del ultimo metodo identificado, retornamos el return
+            int index = sc.getMethods().get(sc.getMethods().size()-1).getMetType();//tomamos el tipo del ultimo metodo
+            return _type.get(index);//retornamos el tipo de la variable            
+        }
+            
+        return getMethodReturn(st);
+    }
+    
+    /**
+     * modifica el stack de tal forma que actualiza si un metodo tiene un retorno
+     * como definimos un boolean que es si un metodo tiene al menos un retorno, 
+     * modificamos el mismo para asignarle true
+     * 
+     * si el metodo ya tiene true, se realiza de todos modos
+     * 
+     * se realiza tras validar que existe dicho metodo
+     * @param st stack de tipo scope
+     * @return stack de tipo scope
+     */
+    public Stack<Scope> setMethodReturn(Stack<Scope> st){
+        Scope sc = st.pop();//obtenemos el ultimo scope
+        if (sc.getMethods().size()>0){//si tiene al menos un metodo, ese es el que buscamos
+            sc.getMethods().get(sc.getMethods().size()-1).setReturn(true);//asignamos true al metodo
+            st.push(sc);//volvemos a combinarlo
+            return st;//retornamos toda la pila
+        }
+        
+        //si no tiene metodos definidos
+        st = setMethodReturn(st);//visitamos cada uno de los scopes restantes, suponiendo que es correcto
+        st.push(sc);//agregamos el ultimo pop
+        
+        return st;
+    }
+    
+    public String visitExpression(ExpressionContext ctx){
+        if (ctx.getChildCount()<=1 ){//si no tiene mas de un hijo
+            return visit(ctx.getChild(0));//retorna la visita del primer hijo
+        }else if (ctx.getChild(0) instanceof ExpressionContext){//si lo primero es expression
+            //debe tener 3 hijos
+            String type1 = visit(ctx.getChild(0));//tipo de primer expression
+            String type2 = visit(ctx.getChild(2));//tipo de segundo expression
+            String optype = visit(ctx.getChild(1));//tipo de operacion
+            if (optype.equals(_type.get(1))){
+                if (type1.equals(_type.get(1)) && type2.equals(_type.get(1))){//si ambos son ints
+                    return _type.get(3);//retorna boolean porque la expresion es boolean
+                }
+                _error.push(new Exception("Error in expression1, expression2, not int type"));
+                return _type.get(5);//retornar error
+            }else if(optype.equals(_type.get(0))){//si es void, solo es necesario que ambos sean iguales
+                if (type1.equals(type2)){
+                    return _type.get(3);//retorna tipo booleano
+                }
+                _error.push(new Exception("Error in expression1, expression2, not same type"));
+                return _type.get(5);//retornar error
+            }else if(optype.equals(_type.get(3))){//si es boolean, es comparacion boolean
+                if (type1.equals(_type.get(3)) && type2.equals(_type.get(3))){//si ambos son ints
+                    return _type.get(3);//retorna boolean porque la expresion es boolean
+                }
+                _error.push(new Exception("Error in expression1, expression2, not boolean type"));
+                return _type.get(5);//retornar error
+            }
+        }else if (ctx.getChild(0).getText().equals("-")){
+            if (visit(ctx.getChild(1)).equals(_type.get(1))){//si el tipo de retorno es int
+                return _type.get(1);//retornamos tipo int
+            }
+            _error.push(new Exception("Error in expression, int expected"));
+            return _type.get(5);//retornar error
+        }else if (ctx.getChild(0).getText().equals("!")){
+            if (visit(ctx.getChild(1)).equals(_type.get(3))){//si la expresion es de tipo booleano
+                return _type.get(3);//retornamos tipo booleano
+            }
+            _error.push(new Exception("Error in expression, boolean expected"));
+            return _type.get(5);//retornar error
+        }else if (ctx.getChild(0).getText().equals("(")){
+            return visit(ctx.getChild(1));//retornamos el valor de la expresion entre parentesis
+        }
+        return _type.get(5);//retornamos error por default
+    }
+    
+    public String visitOp(OpContext ctx){
+        if (ctx.getChild(0) instanceof Rel_opContext){
+            return _type.get(1);//retorno tipo int
+        }else if (ctx.getChild(0) instanceof Eq_opContext){
+            return _type.get(0);//retorno void porque puede ser cualquier cosa
+        }else{
+            return _type.get(3);//retorno boolean
+        }
+    }
+    
+    public String visitLocation(LocationContext ctx){
+        if (ctx.getChildCount()>1){//quiere decir que tiene mas cosas
+            Stack<Scope> temp = new Stack();
+            temp.addAll(_scope);//creamos temporal del mismo tipo que ambientes
+
+            Variable var = getVarType(ctx.getChild(0).getText(),temp);
+            if (var == null){//quiere decir que no esta definida
+                _error.push(new Exception("Variable not defined in Location"));
+                return _type.get(5);//retornamos error
+            }
+            int index = var.getVarType();
+            String type = _type.get(index);//tomamos el tipo
+            
+            if (ctx.getChild(1).getText().equals("[")){//si tiene esto
+                if (!var.isIsArray()){//si no es array
+                    _error.push(new Exception("Variable not defined as array"));
+                    return _type.get(5);//retornamos error
+                }
+                String expressionType = visit(ctx.getChild(2));//tomamos valor de expression
+                if (!expressionType.equals(_type.get(1))){//quiere decir que no es un entero
+                    _error.push(new Exception("Expression y variable array isn't int type"));
+                    return _type.get(5);
+                }
+                
+                if (ctx.getChildCount()>4){//quiere decir que tiene otro location
+                    //type ya tiene el tipo de la variable
+                    String nId = ctx.getChild(ctx.getChildCount()-1).getText();//tomamos el id del nuevo id location
+                    if (isTypeType(type,nId)){
+                        
+                    }
+                    
+                }
+                
+                return type;//retonamos tipo sencillo, ya que llamamos a[], por lo que retorna uno
+                
+                //de lo contrario si es 
+            }else if (ctx.getChild(1).getText().equals(".")){//caso en el que se llame a un location
+                
+            }
+            
+        }
+        
+        Stack<Scope> temp = new Stack();
+        temp.addAll(_scope);//creamos temporal del mismo tipo que ambientes
+        
+        Variable var = getVarType(ctx.getChild(0).getText(),temp);
+        if (var == null){//quiere decir que no esta definida
+            _error.push(new Exception("Variable not defined in Location"));
+            return _type.get(5);//retornamos error
+        }
+        int index = var.getVarType();
+        String type = _type.get(index);//tomamos el tipo
+        if (var.isIsArray()){//si es array
+            return type+"array";//amplificamos el tipo a array por si no coordina con los demas
+        }
+        return type;//retornar type de lo contrario        
+    }
+    
+    public Variable getVarType(String varID, Stack<Scope> st){//pedimos el id de la variable y el scope
+        if (st.size()==0) return null;//si no tiene elementos, retornar error
+        
+        Scope sc = st.pop();//tomamos el ultimo scope definido
+        
+        if (sc.getVars().size()>0){//quiere decir que tiene variables definidas
+            //buscamos la variable en ese scope
+            Variable temp = new Variable();
+            temp.setVarId(varID);//asignamos un varId
+            if (sc.getVars().contains(temp)){//si la variable esta contenida en ese scope, retornamos esa variable
+                int index = sc.getVars().indexOf(temp);//obtenemos el indice del mismo
+                return sc.getVars().get(index);//retornamos variable definida
+            }
+                       
+        }
+            
+        return getVarType(varID, st);//retornamos recursividad del metodo
+    }
+    
+    public boolean isTypeType(String type, String Id){
+        
+        Stack<Scope> temp = new Stack();
+        temp.addAll(_scope);//variable temporal de ambitos
+        return isTypeType(type,Id,temp);
+        
+    }
+    
+    private boolean isTypeType(String type, String Id, Stack<Scope> st){
+        if (st.size()==0) return false;//si esta vacio eliminar
+        
+        if (!_type.contains(type)) return false;//si no existe la variable, que retorne false
+        Scope sc = st.pop();//tomamos el ultimo scope definido
+        
+        if (sc.getVars().size()>0){//quiere decir que tiene variables definidas
+            //buscamos la variable en ese scope
+            
+            int index = _type.indexOf(type);//obtenemos indice de declaracion
+            temp.setVarId(varID);//asignamos un varId
+            if (sc.getVars().contains(temp)){//si la variable esta contenida en ese scope, retornamos esa variable
+                int index = sc.getVars().indexOf(temp);//obtenemos el indice del mismo
+                return sc.getVars().get(index);//retornamos variable definida
+            }
+                       
+        }
+            
+        return isTypeType(type,Id, st);//retornamos recursividad del metodo
+    }
+
+
 }

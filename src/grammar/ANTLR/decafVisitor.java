@@ -138,12 +138,6 @@ public interface decafVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitPlusOrMinus(@NotNull decafParser.PlusOrMinusContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link decafParser#arith_op}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitArith_op(@NotNull decafParser.Arith_opContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link decafParser#declaration}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

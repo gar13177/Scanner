@@ -13,6 +13,7 @@ import java.util.Objects;
 public class Method {
     private String _metID;
     private int _metType;
+    private boolean _return;//identifica si ya se ha puesto return valido
     
     /**
      * Init Method empty
@@ -29,6 +30,7 @@ public class Method {
     public Method(String mI, int mT){
         this._metID = mI;
         this._metType = mT;
+        this._return = false;
     }
 
     /**
@@ -78,6 +80,20 @@ public class Method {
         hash = 17 * hash + Objects.hashCode(this._metID);
         hash = 17 * hash + this._metType;
         return hash;
+    }
+
+    /**
+     * @return the _return
+     */
+    public boolean isReturn() {
+        return _return;
+    }
+
+    /**
+     * @param _return the _return to set
+     */
+    public void setReturn(boolean _return) {
+        this._return = _return;
     }
     
     
