@@ -12,7 +12,7 @@ grammar decaf;
 
 //reglas
 
-program : 'class' 'Program' '{' (declaration)* '}'  ;
+program : 'class' ID '{' (declaration)* '}'  ;
 
 declaration:  structDeclaration |  varDeclaration | methodDeclaration ;
 

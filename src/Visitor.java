@@ -45,13 +45,14 @@ public class Visitor extends decafBaseVisitor<String> {
             int i = 3;
             while (!ctx.getChild(i).getText().equals("}")){//mientras no sea el ultimo
                 if (!visit(ctx.getChild(i)).equals(_type.get(0))){
-                    
+                    System.out.println(_error);
                     _error.push(new Exception("Error in Program in node "+i));//stack de errores
                     return _type.get(5);//retorna error ante el primer error encontrado
                 }
                 i++;
             }
         }
+        
         return _type.get(0);
     }
     
@@ -64,23 +65,24 @@ public class Visitor extends decafBaseVisitor<String> {
         //verificamos el tipo de la variable
         String type = ctx.getChild(0).getText();//tomamos la primera palabra del tipo
         
-        if (!type.equals("struct")){//si no es un struct
-            return type;
-        }
+       
         
         if (ctx.getChild(0) instanceof StructDeclarationContext){//si es un structDeclaration
             String state = visit(ctx.getChild(0));//visitamos struct Declaration
-            if (state.equals(_type.get(0))){//si es igual a void esta bien definido
+            if (!state.equals(_type.get(5))){//si no es error esta bien definido
                 return ctx.getChild(0).getChild(1).getText();//tomamos el nodo ID en structDeclaration y regresamos su valor
             }
             _error.push(new Exception("Variable struct "+ctx.getChild(0).getChild(1).getText()+" error"));//variable definida en el contexto
+            return _type.get(5);
             //si no es void, hubo error
             
         }else{//si no es structDeclaration, pero tiene struct, regresamos id del nuevo struct
+            if (!type.equals("struct")){//si no es un struct
+                return type;
+            }
             return ctx.getChild(1).getText();//regresamos struct ID!
         }
         
-        return _type.get(5);//retornamos error
     }
     
     public String visitVarDeclaration(VarDeclarationContext ctx){
@@ -155,34 +157,36 @@ public class Visitor extends decafBaseVisitor<String> {
         _type.add(name);//definimos un struct
         //ahora, las variables definidas dentro del struct deben ser nuevas
         _scope.push(new Scope());//creamos un nuevo ambiente para definir variables
-        String state = visitChildren(ctx);//visitamos los hijos
-        if (state.equals(_type.get(5))){//si el struct esta mal definido
-            //como no se cuantos struct pudo haber creado, elimino todo lo nuevo
-            while (_type.size()!= length){//mientras no se hayan eliminado las nuevas creaciones
-                _type.remove(-1);//quitamos el ultimo de la lista
+        
+        
+        if (!ctx.getChild(3).getText().equals("}")){//quiere decir que tiene parametros
+            int i = 3;
+            while (!ctx.getChild(i).getText().equals("}")){//mientras no sea el ultimo
+                if (!ctx.getChild(i).getText().equals(",")){//si no es una coma
+                    if (ctx.getChild(i).getChild(0) instanceof StructDeclarationContext){// struct dentro de struct
+                        _error.push(new Exception("Struct declared into other struct"));
+                        return _type.get(5);
+                    }
+                    if (visit(ctx.getChild(i)).equals(_type.get(5))){//si es error
+                        _error.push(new Exception("Error in variable declaration in struct "+name));
+                        return _type.get(5);
+                    }
+                }
+                i++;
             }
-            
-            //ahora eliminamos el scope
-            _scope.pop();
-            
-            _error.push(new Exception("Struct definition error "+name));
-            return _type.get(5);//retornamos error
         }
+        
         
         //el struct esta bien definido
         //suponemos que las nuevas variables estan guardadas en el scope superior
         
-        /**
-         * falta arreglar cuando un struct esta definido en un struct
-         * tambien si hay un array dentro del struct
-         */
         Scope temp = _scope.pop();//tomamos el scope
         _scope.peek().getStruct().add(temp.getVars());//agregamos las variables al array
         int index = _type.indexOf(name);//tomamos el indice de la nueva variable
         _scope.peek().getStructVars().add(new StructVars(index,_scope.peek().getStruct().size()-1));//vinculamos con el ultimo
         
         
-        return _type.get(0);//retornamos void
+        return name;//retornamos void
     }
     
     public String visitMethodType(MethodTypeContext ctx){
@@ -218,7 +222,7 @@ public class Visitor extends decafBaseVisitor<String> {
   
             while (!ctx.getChild(i).getText().equals(")")){//mientras no sea el parentesis
                 
-                if (!ctx.getChild(i).getText().equals(",")){//no aseguramos que no sea una coma
+                if (!ctx.getChild(i).getText().equals(",")){//nos aseguramos que no sea una coma
                     if (!visit(ctx.getChild(i)).equals(_type.get(0)) && !visit(ctx.getChild(i)).equals("array")){//si el parametro no es correcto y no es array
 
                         _error.push(new Exception("Error in Parameter in node "+i));//stack de errores
@@ -226,7 +230,7 @@ public class Visitor extends decafBaseVisitor<String> {
                     }else if (visit(ctx.getChild(i)).equals(_type.get(0))){//si es correcto, debemos agregarlo a la relacion
 
                         //declaramos un nuevo parametro
-                        Parameter temp = new Parameter(ctx.getChild(i).getChild(1).getText(),_type.indexOf(ctx.getChild(i).getChild(0)),indexOfMethod);
+                        Parameter temp = new Parameter(ctx.getChild(i).getChild(1).getText(),_type.indexOf(ctx.getChild(i).getChild(0).getText()),indexOfMethod);
                         
                         
                         if (_scope.peek().getParams().contains(temp)){//si ya hay un parametro definido asi
@@ -244,7 +248,7 @@ public class Visitor extends decafBaseVisitor<String> {
                     }else{//ya sabemos que no tiene error y no es void, entonces es array
 
                         //creamos parametro de tipo array
-                        Parameter temp = new Parameter(ctx.getChild(i).getChild(1).getText(),_type.indexOf(ctx.getChild(i).getChild(0)),true,indexOfMethod);
+                        Parameter temp = new Parameter(ctx.getChild(i).getChild(1).getText(),_type.indexOf(ctx.getChild(i).getChild(0).getText()),true,indexOfMethod);
                         
                         
                         if (_scope.peek().getParams().contains(temp)){//si ya hay un parametro definido asi
@@ -265,14 +269,30 @@ public class Visitor extends decafBaseVisitor<String> {
             }
         }//de lo contrario no tiene parametros y lo dejamos pasar
         
+        int lengthOfTypes = _type.size();//tamano de los tipos
+        
         _scope.push(new Scope());//nos metemos en el ambito
         
-        if (tempVar.size() != 0){//si existen parametros, agregamos las variables al scope actual
+        if (!tempVar.isEmpty()){//si existen parametros, agregamos las variables al scope actual
             _scope.peek().setVars(tempVar);//agregamos las variables definidas como parametros
         }
         
         if (visit(ctx.getChild(ctx.getChildCount()-1)).equals(_type.get(0))){//si es tipo void, todo esta bien
             _scope.pop();//eliminamos ambito 
+            
+            Method m = _scope.peek().getMethods().get(_scope.peek().getMethods().size()-1);//tomamos el ultimo metodo
+            if (!m.isReturn()){//quiere decir que no tiene return
+                if (m.getMetType() != 0){//si no es void, hay error
+                    _error.push(new Exception("Method "+m.getMetID()+" return type "+_type.get(m.getMetType())+" not declared"));
+                    return _type.get(5);
+                }
+            }
+            
+            //eliminamos todos los tipos que pudieron haber creado
+            while (_type.size() > lengthOfTypes){//mientras sea mas grande que su estado inicial
+                _type.remove(_type.size()-1);//quitamos el ultimo tipo
+            }
+            
             return _type.get(0);//retornamos tipo void
         }
         
@@ -524,16 +544,18 @@ public class Visitor extends decafBaseVisitor<String> {
                 }
                 String expressionType = visit(ctx.getChild(2));//tomamos valor de expression
                 if (!expressionType.equals(_type.get(1))){//quiere decir que no es un entero
-                    _error.push(new Exception("Expression y variable array isn't int type"));
+                    _error.push(new Exception("Expression in variable array isn't int type"));
                     return _type.get(5);
                 }
                 
                 if (ctx.getChildCount()>4){//quiere decir que tiene otro location
                     //type ya tiene el tipo de la variable
-                    String nId = ctx.getChild(ctx.getChildCount()-1).getText();//tomamos el id del nuevo id location
-                    if (isTypeType(type,nId)){
-                        
-                    }
+                    
+                    //este es nuestro paso base, en el cual es definicion de id como variable
+                    //si existe un location, hay que seguir buscando
+                    Stack<Scope> tempStack = new Stack();
+                    tempStack.addAll(_scope);//temporal de scopes
+                    return recursiveLocation2(index,tempStack,(LocationContext) ctx.getChild(ctx.getChildCount()-1));
                     
                 }
                 
@@ -541,7 +563,16 @@ public class Visitor extends decafBaseVisitor<String> {
                 
                 //de lo contrario si es 
             }else if (ctx.getChild(1).getText().equals(".")){//caso en el que se llame a un location
+                if (var.isIsArray()){//error porque se debe llamar un elemento
+                    _error.push(new Exception("Variable declared as array, new parameter found"));
+                    return _type.get(5);
+                }
                 
+                //de lo contario, nuevamente llamamos recursive location
+                //tenemos el tipo de la variable global
+                Stack<Scope> tempStack = new Stack();
+                tempStack.addAll(_scope);//temporal de scopes
+                return recursiveLocation2(index,tempStack,(LocationContext) ctx.getChild(ctx.getChildCount()-1));
             }
             
         }
@@ -555,6 +586,7 @@ public class Visitor extends decafBaseVisitor<String> {
             return _type.get(5);//retornamos error
         }
         int index = var.getVarType();
+       
         String type = _type.get(index);//tomamos el tipo
         if (var.isIsArray()){//si es array
             return type+"array";//amplificamos el tipo a array por si no coordina con los demas
@@ -581,33 +613,226 @@ public class Visitor extends decafBaseVisitor<String> {
         return getVarType(varID, st);//retornamos recursividad del metodo
     }
     
-    public boolean isTypeType(String type, String Id){
+    /**
+     * 
+     * @param type tipo del id de primera definicion de este location
+     * @param st todos los ambientes (pila)
+     * @param ctx siguiente .location si existe!!
+     * @return 
+     */
+    public String recursiveLocation2 (int type, Stack<Scope> st, LocationContext ctx){
+        //casos base
+        if (st.size()==0) return _type.get(5);//retornamos error si ya no hay scope
         
-        Stack<Scope> temp = new Stack();
-        temp.addAll(_scope);//variable temporal de ambitos
-        return isTypeType(type,Id,temp);
+        Scope sc = st.pop();//tomamos el ultimo scope
+        if (sc.getStructVars().isEmpty()) return recursiveLocation2(type,st,ctx);//simplemente bajamos un nivel
         
+        ArrayList<StructVars> structVars = new ArrayList();//structvars temporal
+        for (int i = 0; i< sc.getStructVars().size(); i++){//recorremos todo el array de vinculaciones de ese ambito
+            if (sc.getStructVars().get(i).getStructID() == type){//si es del mismo tipo lo agregamos
+                structVars.add(sc.getStructVars().get(i));
+            }     
+        }
+        
+        if (structVars.isEmpty()) return recursiveLocation2 (type, st, ctx);//si no estaba definido en este scope, tal vez esta definido en el siguiente
+        
+        //de lo contrario, ya tenemos el indice de las tablas de variables, por lo que podemos buscarlas
+        if (structVars.size()>1){//como no espero que sea mas de una tabla
+            _error.push(new Exception("Struct defined multiple times"));
+            return _type.get(5);
+        }
+        
+
+        
+        ArrayList<Variable> structVariable = new ArrayList();//creo un arreglo temporal que identifica las variables definidas
+        structVariable.addAll(sc.getStruct().get(structVars.get(0).getStructVars()));//tomo el arraylist de variables definidas
+
+        String id = ctx.getChild(0).getText();//sabemos que location siempre va a tener un id, lo tomamos
+        Variable temp = new Variable();
+        temp.setVarId(id);//creamos una temporal de tipo variable
+        
+        if (!structVariable.contains(temp)){//si no esta contenida retornamos error
+            _error.push(new Exception("Variable not defined in struct"));
+            return _type.get(5);
+        }
+        
+        int index = structVariable.indexOf(temp);
+        temp = structVariable.get(index);//ya tenemos la variable !
+        
+        //ahora toca el caso de error
+        
+        if (ctx.getChildCount() <=1 ){//quiere decir que no lo llamaron como array o con otro location
+            if (temp.isIsArray()){//si es array
+                return _type.get(temp.getVarType())+"array";          
+            }
+            return _type.get(temp.getVarType());//retornamos el tipo
+        }
+        
+        if (ctx.getChild(1).getText().equals("[")){//quiere decir que lo llamaron como array
+            if (temp.isIsArray()){//si esta declarado como array,  todo bien
+                if (ctx.getChildCount()<=4){//quiere decir que no tiene otro location
+                    if (!visit(ctx.getChild(2)).equals(_type.get(1))){//si no es int, error
+                        _error.push(new Exception("Expression not defined as int"));
+                        return _type.get(5);
+                    }
+                    return _type.get(temp.getVarType());//retornamos el tipo de la variable
+                }else{//esto quiere decir que tiene otro location
+                    type = temp.getVarType();//nuevo tipo de evaluacion
+                    st.push(sc);//volvemos a meter este ambito para que sea evaluado
+                    ctx = (LocationContext) ctx.getChild(ctx.getChildCount()-1);//asignamos un nuevo location
+                    return recursiveLocation2(type,st,ctx);//we go deeper
+                    
+                }
+                
+            }else {
+                _error.push(new Exception("Variable not defined as array"));
+                return _type.get(5);
+            }
+            
+        }else if (ctx.getChild(1).getText().equals(".")){//quiere decir que hay location
+            if (temp.isIsArray()){//si es array y no se busco un elemento, hay error
+                _error.push(new Exception("Variable declared as array, new parameter found"));
+                return _type.get(5);
+            }
+            
+            //de lo contrario no es array y se busca un nuevo location
+            
+            type = temp.getVarType();//nuevo tipo de evaluacion
+            st.push(sc);//volvemos a meter este ambito para que sea evaluado
+            ctx = (LocationContext) ctx.getChild(ctx.getChildCount()-1);//asignamos un nuevo location
+            return recursiveLocation2(type,st,ctx);//we go deeper
+        }
+        
+        return _type.get(5);//retornar error por defecto
     }
     
-    private boolean isTypeType(String type, String Id, Stack<Scope> st){
-        if (st.size()==0) return false;//si esta vacio eliminar
+    public String visitMethodCall(MethodCallContext ctx){
+        String idMethod = ctx.getChild(0).getText();
         
-        if (!_type.contains(type)) return false;//si no existe la variable, que retorne false
-        Scope sc = st.pop();//tomamos el ultimo scope definido
-        
-        if (sc.getVars().size()>0){//quiere decir que tiene variables definidas
-            //buscamos la variable en ese scope
-            
-            int index = _type.indexOf(type);//obtenemos indice de declaracion
-            temp.setVarId(varID);//asignamos un varId
-            if (sc.getVars().contains(temp)){//si la variable esta contenida en ese scope, retornamos esa variable
-                int index = sc.getVars().indexOf(temp);//obtenemos el indice del mismo
-                return sc.getVars().get(index);//retornamos variable definida
+        //suponemos que los metodos siempre van a estar definidos en la base de la pila
+        Scope baseScope = _scope.get(0);//tomamos el scope base
+        ArrayList<Method> methods = baseScope.getMethods();//metodos definidos
+        Method mt = null;
+        int index = 0;
+        for (int i = 0; i< methods.size(); i++){
+            if (methods.get(i).getMetID().equals(idMethod)){//si existe el metodo
+                mt = methods.get(i);//asignamos el metodo
+                index = i;
             }
-                       
         }
+        
+        if (mt == null){
+            _error.push(new Exception("Method "+idMethod+" not defined"));
+            return _type.get(5);
+        }
+        
+        //de lo contrario, el metodo existe y ya tenemos el index
+        
+        ArrayList<Parameter> params = new ArrayList();
+        ArrayList<Parameter> baseParams = baseScope.getParams();
+        
+        for (Parameter p: baseParams){//para cada parametro
+            if (p.getMetIndex() == index){
+                params.add(p);//obtenemos todos los parametros de ese metodo
+            }
+        }
+        
+        if (!ctx.getChild(2).getText().equals(")")){//si no, quiere decir que tiene parametros
+            int i = 2, j=0;//defino punteros
+            while (!ctx.getChild(i).getText().equals(")")){//mientras no sea el parentesis
+                if (!ctx.getChild(i).getText().equals(",")){//no aseguramos que no sea una coma
+                    String paramType = visit(ctx.getChild(i));//visitamos el hijo
+                    if (paramType.equals(_type.get(5))){//si es error
+                        _error.push(new Exception("Error in parameter in node "+i));//
+                    }
+                    
+                    Parameter p = params.get(j);
+                    String paramtype = _type.get(p.getVarType());
+                    if (p.isIsArray()) paramtype = paramtype +"array";//obtenemos el caso que sea array
+                    
+                    if (!paramType.equals(paramtype)){//si no son del mismo tipo
+                        _error.push(new Exception("Error in parameter, type mismatch in node "+i));
+                        return _type.get(5);
+                    }
+                    j++;//incremento j para seguir verificando                
+                }
+                i++;
+            }
+        }else if (params.size()>0){//quiere decir que el metodo lleva parametro y no se declararon
+            System.out.println(params);
+            _error.push(new Exception("Method named without parameters"));
+            return _type.get(5);//retornamos error
+        }
+        
+        
+        return _type.get(mt.getMetType());
+    }
+    
+    public String visitArg(ArgContext ctx){
+        return visitChildren(ctx);//como arg tira expression
+    }
+  
+    public String visitCalc_op(Calc_opContext ctx){
+        return visitChildren(ctx);//solo va a plusor minus
+    }
+    
+    public String visitPlusOrMinus(PlusOrMinusContext ctx){
+        if (ctx.getChildCount()>1){//si es mayor que 1 hace las sumas
+            if (visit(ctx.getChild(0)).equals(_type.get(1)) && visit(ctx.getChild(2)).equals(_type.get(1))){
+                //si ambos son enteros
+                return _type.get(1);//independiente de suma o resta, retorna un int
+            }
+            _error.push(new Exception("Declared operation not int type"));
+        }
+        
+        return visitChildren(ctx);//como es uno,  es multordiv
+    }
+    
+    public String visitMultOrDiv(MultOrDivContext ctx){
+        if (ctx.getChildCount()>1){//si es mayor que 1 hace las multiplicaciones
+            if (visit(ctx.getChild(0)).equals(_type.get(1)) && visit(ctx.getChild(2)).equals(_type.get(1))){
+                //si ambos son enteros
+                return _type.get(1);//independiente de suma o resta, retorna un int
+            }
+            _error.push(new Exception("Declared operation not int type"));
+        }
+        
+        return visitChildren(ctx);
+    }
+    
+    public String visitPow (PowContext ctx){
+        return visitChildren(ctx);//retornamos unaryminus
+    }
+    
+    public String visitUnaryMinus( UnaryMinusContext ctx){
+        if (ctx.getChildCount()>1){
+            if (visit(ctx.getChild(1)).equals(_type.get(1))){//si es entero
+                return _type.get(1);
+            }
             
-        return isTypeType(type,Id, st);//retornamos recursividad del metodo
+            _error.push(new Exception("UnaryMinus not defined as int"));
+            return _type.get(5);
+        }
+        
+        return visitChildren(ctx);//retornamos atom
+    }
+    
+    public String visitAtom( AtomContext ctx){
+        if (ctx.getChildCount()>1){//quiere decir que tiene parentesis
+            return visit(ctx.getChild(1));//plusorminus
+        }
+        
+        return visitChildren(ctx);//retorna por defecto
+    }
+    
+    public String visitLiteral (LiteralContext ctx){
+        if (ctx.getChild(0) instanceof Int_literalContext){
+            return _type.get(1);//retorna tipo entero
+        }else if (ctx.getChild(0) instanceof Char_literalContext){
+            return _type.get(2);//retorna char
+        }
+        
+        return _type.get(3);//retornamos boolean por defecto
     }
 
 

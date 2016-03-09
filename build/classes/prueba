@@ -1,10 +1,31 @@
-class Program {
+class pr {
 
-char main(){
     
- return 5 ;
+    struct Carro{
+        int a;
+        int b;
 
-}
+    } carro;
+
+    int fib (int a, char b){
+        struct Prueba {
+            int a;
+            int b;
+        } pr;
+
+        struct Carro carro2;
+        carro2 = carro;
+        if (true) {
+            return 5;
+        }
+        
+    }
+
+    void main(){
+        struct Carro carro;
+        //struct Prueba pr;
+
+    }
 
 }
 //prueba
