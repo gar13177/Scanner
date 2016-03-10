@@ -21,6 +21,7 @@ import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 /**
@@ -52,7 +53,7 @@ public class mainView extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         jList1 = new javax.swing.JList();
         jScrollPane2 = new javax.swing.JScrollPane();
-        jLabel1 = new javax.swing.JLabel();
+        jScrollPane3 = new javax.swing.JScrollPane();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
@@ -62,6 +63,8 @@ public class mainView extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setPreferredSize(new java.awt.Dimension(600, 400));
+
+        jScrollPane1.setAutoscrolls(true);
 
         jList1.setModel(new javax.swing.AbstractListModel() {
             String[] strings = { "Code", "Sintax Tree" };
@@ -75,7 +78,9 @@ public class mainView extends javax.swing.JFrame {
         });
         jScrollPane1.setViewportView(jList1);
 
-        jLabel1.setText("jLabel1");
+        jScrollPane2.setAutoscrolls(true);
+
+        jScrollPane3.setAutoscrolls(true);
 
         jMenuBar1.setToolTipText("");
         jMenuBar1.setName(""); // NOI18N
@@ -116,17 +121,21 @@ public class mainView extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 219, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 974, Short.MAX_VALUE)
-                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 375, Short.MAX_VALUE))
+            .addComponent(jScrollPane3)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 674, Short.MAX_VALUE)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jScrollPane2))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(1, 1, 1)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 373, Short.MAX_VALUE)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 643, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         pack();
@@ -136,7 +145,10 @@ public class mainView extends javax.swing.JFrame {
         // TODO add your handling code here:
         String aux="";   
         try {
-            JFileChooser file=new JFileChooser("C://Users");
+            JFileChooser file;
+            
+            file=new JFileChooser("C:\\Users\\Kevin\\Documents\\Kevin\\Ciclo 7\\Compis\\Scanner\\src");
+            
             file.showOpenDialog(this);
             File abre=file.getSelectedFile();
 
@@ -169,8 +181,11 @@ public class mainView extends javax.swing.JFrame {
 
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
         // TODO add your handling code here:
-        getTree();
-        
+        try{
+            getTree();
+        }catch (IOException e){
+            
+        }
         //System.out.println(arbolGenerado.toString());
     }//GEN-LAST:event_jMenuItem3ActionPerformed
     
@@ -210,21 +225,33 @@ public class mainView extends javax.swing.JFrame {
     }
     
     
-    private DefaultMutableTreeNode getTree() { 
+    private DefaultMutableTreeNode getTree() throws IOException { 
         ANTLRInputStream input = new ANTLRInputStream(tarea.getText());
         decafLexer lexer = new decafLexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         decafParser parser = new decafParser(tokens);
        
         
-        
-        
-        //lexer.removeErrorListeners();
-        //lexer.addErrorListener(DescriptiveErrorListener.INSTANCE);
         parser.removeErrorListeners();
         parser.addErrorListener(DescriptiveErrorListener.INSTANCE);
         ProgramContext tree = parser.program();
-        jLabel1.setText(DescriptiveErrorListener.errors);
+        JTextArea tarea = new JTextArea();
+        tarea.append(DescriptiveErrorListener.errors);
+        jScrollPane3.setViewportView(tarea);
+        
+        try{
+            ParserRuleContext trr = (ParserRuleContext) tree;
+            Visitor visitor = new Visitor();
+            String result = visitor.visit(trr);
+            if (result.equals("error")){
+                tarea.append(visitor.toStringError());
+            }else{
+            tarea.append("void");//corrio bien
+            }
+            System.out.println(visitor.getScope());
+        } catch (Exception e){
+            
+        }
          
         AST ast = new AST(tree);
         return ast.generateRoot(tree);
@@ -247,14 +274,17 @@ public class mainView extends javax.swing.JFrame {
         String[] nodos = {"a","b","c"};
         DefaultMutableTreeNode dmtn = new DefaultMutableTreeNode("Letras"); 
         //arbol = new JTree(nodos); 
-        JTree gui_tree = new JTree(getTree());
+        try{
+            JTree gui_tree = new JTree(getTree());
+            jScrollPane2.setViewportView(gui_tree);
+        }catch (IOException e){
+            System.out.println("Aun no hay codigo");
+        }
         
-        jScrollPane2.setViewportView(gui_tree);
     }
     
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel jLabel1;
     private javax.swing.JList jList1;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
@@ -264,5 +294,6 @@ public class mainView extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
     // End of variables declaration//GEN-END:variables
 }

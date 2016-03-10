@@ -63,18 +63,19 @@ public class Scanner {
         List<String> lst = Arrays.asList(parser.getRuleNames());
         TreeViewer tr = new TreeViewer(lst,tree);
         
-        //mainView mv = new mainView();
-        //mv.setVisible(true);
+        mainView mv = new mainView();
+        mv.setVisible(true);
+        mv.setResizable(true);
         //show AST in GUI
-        JFrame frame = new JFrame("Antlr AST");
-        JPanel panel = new JPanel();
-        tr.setScale(1.5);//scale a little
-        panel.add(tr);
-        frame.add(panel);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.pack();
-        frame.setResizable(false);
-        frame.setVisible(true);
+        //JFrame frame = new JFrame("Antlr AST");
+        //JPanel panel = new JPanel();
+        //tr.setScale(1.5);//scale a little
+        //panel.add(tr);
+        //frame.add(panel);
+        //frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        //frame.pack();
+        //frame.setResizable(true);
+        //frame.setVisible(true);
     }
     
 }
