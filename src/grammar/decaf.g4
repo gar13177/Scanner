@@ -22,7 +22,6 @@ varType: 'int'
        | 'char'
        | 'boolean'
        | 'struct' ID 
-       | 'void'
        |structDeclaration;
 
 varDeclaration: varType ID ';'
@@ -49,25 +48,25 @@ parameterType: 'int'
 
 block : '{' (varDeclaration)* (statement)* '}' ;
 
-statement : 'if' '(' expression ')' block ( 'else' block )? 
-           | 'while' '(' expression ')' block
-           | 'return' ( expression )? ';'
-           | methodCall ';' 
-           | block  
-           | location '=' expression 
-           | (expression)? ';'  ;
+statement : 'if' '(' expression ')' block ( 'else' block )? #statementIf
+           | 'while' '(' expression ')' block #statementWhile
+           | 'return' ( expression )? ';' #statementReturn
+           | methodCall ';' #statementMethod
+           | block  #statementBlock
+           | location '=' expression #statementAsign
+           | (expression)? ';'  #statementExp;
 
 
 location : (ID|ID '[' expression ']') ('.' location)?  ;
 
-expression : location 
-           | methodCall 
-           | literal 
-           | calc_op 
-           | expression op expression 
-           | '-' expression 
-           | '!' expression 
-           | '('expression')'  ;
+expression : location #expLocation
+           | methodCall #expMethodCall
+           | literal #expLiteral
+           | calc_op #expCalc
+           | expression op expression #expOPExp
+           | '-' expression #expMinus
+           | '!' expression #expNot
+           | '('expression')' #expPexp ;
 
 methodCall :    ID '(' (arg (',' arg)*)? ')' ;
 

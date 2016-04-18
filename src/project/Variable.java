@@ -13,38 +13,62 @@ import java.util.Objects;
  * @author Kevin
  */
 public class Variable {
-    private String _varId;
-    private int _varType;
-    private boolean _isArray;
+    protected String _varId;//nombre de la variable
+    protected String _varType;//tipo de la variable
+    protected int _size;//tamanio de la variable
     
+    protected boolean _array;//verdadero si es array
+    protected int _arraySize;//tamanio del array
+    
+    protected int _totalSize;//tamanio de array * tamanio de objeto
+    
+    protected boolean _initialized;//identifica si ya se ha inicializado la variable
+    
+     
     /**
-     * Init Variable empty
+     * Constructor
+     * @param vID nombre de la variable
+     * @param vType string de tipo de variable 'int' char, boolean (no struct)
+     * @param vSize tamanio del tipo de variable
+     * @param vArray boolean si es array o no
+     * @param vASize tamanio del array si es array
      */
-    public Variable(){
-        
+    public Variable(String vID, String vType, int vSize, boolean vArray, int vASize){
+        this._varId = vID;
+        this._varType = vType;
+        this._size = vSize;
+        this._array = vArray;
+        this._arraySize = vASize;
+        this._totalSize = _arraySize*_size;
+        this._initialized = false;
     }
     
-    /**
-     * Init Variable
-     * @param vI variable name
-     * @param vT variable type
-     */
-    public Variable(String vI, int vT, boolean iA){
-        this._varId = vI;
-        this._varType = vT;
-        this._isArray = iA;
+    public Variable(String vID, String vType, int vSize){
+        this._varId = vID;
+        this._varType = vType;
+        this._size = vSize;
+        this._array = false;
+        this._arraySize = 0;
+        this._totalSize = _size;
+        this._initialized = false;
     }
     
-    public Variable(String vI, int vT){
-        this._varId = vI;
-        this._varType = vT;
-        this._isArray = false;
+    public Variable(){}
+    
+
+   
+    
+    @Override
+    public String toString(){
+       return getVarId() + " - "+getVarType()+" - "+isArray();
+       
     }
     
-    public Variable(Parameter pr){
-        this._varId = pr.getVarId();
-        this._varType = pr.getVarType();
-        this._isArray = pr.isIsArray();
+    @Override
+    public boolean equals(Object o){
+        Variable v = (Variable)o;
+        boolean r = this.getVarId().equals(v.getVarId());
+        return r;
     }
 
     /**
@@ -64,51 +88,95 @@ public class Variable {
     /**
      * @return the _varType
      */
-    public int getVarType() {
+    public String getVarType() {
         return _varType;
     }
 
     /**
      * @param _varType the _varType to set
      */
-    public void setVarType(int _varType) {
+    public void setVarType(String _varType) {
         this._varType = _varType;
     }
-    
-    @Override
-    public String toString(){
-       return _varId + " - "+_varType+" - "+_isArray;
-       
-    }
-    
-    @Override
-    public boolean equals(Object o){
-        Variable v = (Variable)o;
-        boolean r = this._varId.equals(v.getVarId());
-        
-        return r;
-    }
 
-    @Override
-    public int hashCode() {
-        int hash = 3;
-        hash = 37 * hash + Objects.hashCode(this._varId);
-        hash = 37 * hash + this._varType;
-        return hash;
+    /**
+     * @return the _size
+     */
+    public int getSize() {
+        return _size;
     }
 
     /**
-     * @return the _isArray
+     * @param _size the _size to set
      */
-    public boolean isIsArray() {
-        return _isArray;
+    public void setSize(int _size) {
+        this._size = _size;
     }
 
     /**
-     * @param _isArray the _isArray to set
+     * @return the _array
      */
-    public void setIsArray(boolean _isArray) {
-        this._isArray = _isArray;
+    public boolean isArray() {
+        return _array;
     }
+
+    /**
+     * @param _array the _array to set
+     */
+    public void setArray(boolean _array) {
+        this._array = _array;
+    }
+
+    /**
+     * @return the _arraySize
+     */
+    public int getArraySize() {
+        return _arraySize;
+    }
+
+    /**
+     * @param _arraySize the _arraySize to set
+     */
+    public void setArraySize(int _arraySize) {
+        this._arraySize = _arraySize;
+    }
+
+    /**
+     * @return the _totalSize
+     */
+    public int getTotalSize() {
+        return _totalSize;
+    }
+
+    /**
+     * @param _totalSize the _totalSize to set
+     */
+    public void setTotalSize(int _totalSize) {
+        this._totalSize = _totalSize;
+    }
+    
+    public void updateTotalSize(){
+        if (_array){
+            _totalSize = _size*_arraySize;
+        }else{
+            _totalSize = _size;
+        }
+    }
+
+    /**
+     * @return the _initialized
+     */
+    public boolean isInitialized() {
+        return _initialized;
+    }
+
+    /**
+     * @param _initialized the _initialized to set
+     */
+    public void setInitialized(boolean _initialized) {
+        this._initialized = _initialized;
+    }
+
+    
     
 }

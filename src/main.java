@@ -23,6 +23,8 @@ public class main {
         mv.setVisible(true);
         mv.setResizable(true);
         
+        //Pruebas p = new Pruebas();
+        //p.instance();
     }
     
 }

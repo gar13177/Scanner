@@ -3,7 +3,13 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/Kevin/Documents/Kevin/Ciclo%207/Compis/Scanner/src/Scanner.java</file>
+            <file>file:/C:/Users/Kevin/Documents/Kevin/Ciclo%207/Compis/Scanner/src/project/Scope.java</file>
+            <file>file:/C:/Users/Kevin/Documents/Kevin/Ciclo%207/Compis/Scanner/src/project/Variable.java</file>
+            <file>file:/C:/Users/Kevin/Documents/Kevin/Ciclo%207/Compis/Scanner/src/main.java</file>
+            <file>file:/C:/Users/Kevin/Documents/Kevin/Ciclo%207/Compis/Scanner/src/project/StructVar.java</file>
+            <file>file:/C:/Users/Kevin/Documents/Kevin/Ciclo%207/Compis/Scanner/src/project/StructDef.java</file>
+            <file>file:/C:/Users/Kevin/Documents/Kevin/Ciclo%207/Compis/Scanner/src/views/queryView.java</file>
+            <file>file:/C:/Users/Kevin/Documents/Kevin/Ciclo%207/Compis/Scanner/src/project/MyVisitor.java</file>
         </group>
     </open-files>
 </project-private>
