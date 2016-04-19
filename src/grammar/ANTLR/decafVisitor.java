@@ -31,13 +31,6 @@ public interface decafVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitMethodDeclaration(@NotNull decafParser.MethodDeclarationContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code statementMethod}
-	 * labeled alternative in {@link decafParser#statement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitStatementMethod(@NotNull decafParser.StatementMethodContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code statementReturn}
 	 * labeled alternative in {@link decafParser#statement}.
 	 * @param ctx the parse tree

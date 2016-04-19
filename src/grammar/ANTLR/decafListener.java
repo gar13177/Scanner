@@ -41,18 +41,6 @@ public interface decafListener extends ParseTreeListener {
 	 */
 	void exitMethodDeclaration(@NotNull decafParser.MethodDeclarationContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code statementMethod}
-	 * labeled alternative in {@link decafParser#statement}.
-	 * @param ctx the parse tree
-	 */
-	void enterStatementMethod(@NotNull decafParser.StatementMethodContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code statementMethod}
-	 * labeled alternative in {@link decafParser#statement}.
-	 * @param ctx the parse tree
-	 */
-	void exitStatementMethod(@NotNull decafParser.StatementMethodContext ctx);
-	/**
 	 * Enter a parse tree produced by the {@code statementReturn}
 	 * labeled alternative in {@link decafParser#statement}.
 	 * @param ctx the parse tree

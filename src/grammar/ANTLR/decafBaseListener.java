@@ -53,18 +53,6 @@ public class decafBaseListener implements decafListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterStatementMethod(@NotNull decafParser.StatementMethodContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitStatementMethod(@NotNull decafParser.StatementMethodContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterStatementReturn(@NotNull decafParser.StatementReturnContext ctx) { }
 	/**
 	 * {@inheritDoc}

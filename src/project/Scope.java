@@ -28,6 +28,12 @@ public class Scope {
         _structures = new LinkedHashSet();
     }
     
+    public Scope(Scope sc){
+        _vars = sc.getVars();
+        _methods = sc.getMethods();
+        _structures = sc.getStructures();
+    }
+    
     
 
     
@@ -115,6 +121,15 @@ public class Scope {
         for (Variable v: _vars){
             if (v.getVarId().equals(ID)){
                 return v;
+            }
+        }
+        return null;
+    }
+    
+    public Method hasMethodDef(String ID){
+        for (Method mt: _methods){
+            if (mt.getMetID().equals(ID)){
+                return mt;
             }
         }
         return null;

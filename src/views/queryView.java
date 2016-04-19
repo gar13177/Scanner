@@ -791,6 +791,7 @@ public class queryView extends JFrame implements ActionListener{
 			
                     dataOutputArea.setText("...");
                     textStr = textArea.getText();
+                    dataReadArea.setText(textStr);
 
                     // Create DataBase
                     long startTime = System.nanoTime();
@@ -809,9 +810,9 @@ public class queryView extends JFrame implements ActionListener{
 
                     ParseTree tree = parser.program(); // begin parsing at rule 'program'
 
-                    if (!DescriptiveErrorListener.errors.isEmpty()){
+                    if (!DescriptiveErrorListener.INSTANCE.errors.isEmpty()){
                             dataOutputArea.setText(DescriptiveErrorListener.errors);
-                            DescriptiveErrorListener.errors = "";
+                            DescriptiveErrorListener.INSTANCE.errors = "";
                             refreshTree(tree);
                             return ;//terminamos de correr el metodo
                     }
@@ -826,7 +827,7 @@ public class queryView extends JFrame implements ActionListener{
                         dataOutputArea.setText("Terminado"+"\n"+calculateTime(estimatedTime));
                     }
                     
-                    dataReadArea.setText(textStr);
+                    
                     // Generar verbose
                     if (isVerbose){
                             this.verbose = new ArrayList<String>();
@@ -836,7 +837,12 @@ public class queryView extends JFrame implements ActionListener{
                     
                   
 		} catch (Exception e){
-			dataReadArea.setText("Unexpected error: " + e.getStackTrace().toString());
+                    StackTraceElement[] st = e.getStackTrace();
+                    String str = "Unexpected error:\n";
+                    for (int i = 0; i<st.length; i++){
+                        str += st[i]+"\n";
+                    }
+                    dataOutputArea.setText(str);
 		}
 		
 	}

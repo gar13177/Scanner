@@ -51,10 +51,10 @@ block : '{' (varDeclaration)* (statement)* '}' ;
 statement : 'if' '(' expression ')' block ( 'else' block )? #statementIf
            | 'while' '(' expression ')' block #statementWhile
            | 'return' ( expression )? ';' #statementReturn
-           | methodCall ';' #statementMethod
+           //| methodCall ';' #statementMethod
            | block  #statementBlock
-           | location '=' expression #statementAsign
-           | (expression)? ';'  #statementExp;
+           | location '=' expression ';' #statementAsign
+           | expression ';'  #statementExp;
 
 
 location : (ID|ID '[' expression ']') ('.' location)?  ;
