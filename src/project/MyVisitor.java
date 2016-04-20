@@ -53,7 +53,6 @@ public class MyVisitor extends decafBaseVisitor<Object> {
        
         if (ctx.methodDeclaration() != null){
             visitChildren(ctx);//
-            System.out.println("visit methodDeclaration");
             return "void";
         }
         
@@ -281,6 +280,10 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         Method mt = new Method(id,type);
         mt.setParams(parameters);//agregamos parametros
         mt.setParamsAsVars();//agregamos los parametros como variables locales
+        
+        LinkedHashSet<Method> tempMethods = new LinkedHashSet();
+        tempMethods.addAll(_scopes.peek().getMethods());//guardamos los metodos pervios
+        
         _scopes.peek().getMethods().add(mt);//agregamos el metodo por si hay recursion
         _scopes.push(new Scope());
         _scopes.peek().setVars(mt.getVars());//generamos el nuevo scope con las variables ya definidas
@@ -289,12 +292,90 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         
         Object obj = visit(ctx.block());//visitamos block
         
+        Scope nscope = _scopes.pop();
+ 
+        if (obj == null){
+            int line = ctx.getStart().getLine();
+            int column = ctx.getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en declaracion de metodo '"+mt.getMetID()+"' @line: "+line+" @column: "+column));
+            _scopes.peek().setMethods(tempMethods);//regresamos a los metodos previos
+            errores = true;
+        }
+        
+        Method mtn = new Method();
+        for (Method m: nscope.getMethods()){
+            mtn = m;
+        }
+        
+        if (!mtn.isReturn() && !mtn.getMetType().equals("void") ){//si no tiene  retorno y no es void
+            int line = ctx.getStart().getLine();
+            int column = ctx.getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en declaracion de metodo '"+mt.getMetID()+"' sin retorno @line: "+line+" @column: "+column));
+            _scopes.peek().setMethods(tempMethods);//regresamos a los metodos previos
+            errores = true;
+        }
+        
+        //asignamos las cosas nuevas al metodo
+        mt.setReturn(true);
+        mt.setVars(nscope.getVars());
+        mt.setStructures(nscope.getStructures());
+        
         if (errores) return null;
-        return null;
+        
+       
+        return "void";
     }
     
     public Object visitBlock (BlockContext ctx){
+        LinkedHashSet<Variable> _vars = new LinkedHashSet();//variables definidas en este scope
+        LinkedHashSet<Method> _methods = new LinkedHashSet();//metodos definidos en este scope
+        LinkedHashSet<StructDef> _structures = new LinkedHashSet();//estructuras definidas
+        _vars.addAll(_scopes.peek().getVars());
+        _methods.addAll(_scopes.peek().getMethods());
+        _structures.addAll(_scopes.peek().getStructures());
+        
         boolean errores = false;
+        for (int i = 1; i < ctx.getChildCount()-1; i++){
+            ParseTree child = ctx.getChild(i);
+            if (child instanceof VarDeclarationContext){
+                VarDeclarationContext vdc = (VarDeclarationContext) child;
+                Object obj = visit(vdc);//visitamos varDeclaration
+                if (obj == null){
+                    int line = vdc.getStart().getLine();
+                    int column = vdc.getStart().getCharPositionInLine();
+                    _errors.add(new Exception("Error en parameter @line: "+line+" @column: "+column));
+                    errores = true;
+                }else{
+                    Variable varDec = (Variable) obj;
+
+                    Variable var = _scopes.peek().hasVariableDef(varDec.getVarId());
+
+                    if (var != null){
+                        int line = vdc.getStart().getLine();
+                        int column = vdc.getStart().getCharPositionInLine();
+                        _errors.add(new Exception("Error variable definida anteriormente '"+varDec.getVarId()+"' @line: "+line+" @column: "+column));
+                        errores = true;
+                    }else{
+                        _scopes.peek().getVars().add(varDec);//agregamos variable
+                    }
+                }
+            }else if (child instanceof StatementContext){
+                StatementContext st = (StatementContext) child;
+                Object obj = visit(st);//visitamos statement
+                if (obj == null){
+                    int line = st.getStart().getLine();
+                    int column = st.getStart().getCharPositionInLine();
+                    _errors.add(new Exception("Error en statement @line: "+line+" @column: "+column));
+                    errores = true;
+                }else{
+                    Object[] type_code = (Object[])obj;
+                    String type = (String) type_code[0];//guarda el tipo del statement
+                    String code = (String) type_code[1];//guarda el codigo intermedio del statement
+                }
+            }
+        }
+        
+        /*
         for (VarDeclarationContext vdc: ctx.varDeclaration()){//para cada definicion de variable
             Object obj = visit(vdc);//visitamos varDeclaration
             if (obj == null){
@@ -332,7 +413,10 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                 String code = (String) type_code[1];//guarda el codigo intermedio del statement
             }
         }
-        
+        */
+        _scopes.peek().setMethods(_methods);
+        _scopes.peek().setStructures(_structures);
+        _scopes.peek().setVars(_vars);
         if (errores) return null;
         
         Object[] returnO = {"void",""};
@@ -347,9 +431,12 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             _errors.add(new Exception("Error en expression @line: "+line+" @column: "+column));
             return null;
         }
+        
         Object[] type_code = (Object[])obj;
         String type = (String) type_code[0];//guarda el tipo del statement
         String code = (String) type_code[1];//guarda el codigo intermedio del statement
+        
+       
         
         if (!type.equals("boolean")){
             int line = ctx.expression().getStart().getLine();
@@ -422,7 +509,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                     return null;
                 }else{
                     mt.setReturn(true);
-                    return "void";
+                    Object[] returnO = {"void",""};
+                    return returnO;
                 }
             }
         }
@@ -449,7 +537,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                 return null;
             }else{
                 mt.setReturn(true);
-                return "void";
+                Object[] returnO = {"void",""};
+                return returnO;
             }
         }       
        
@@ -486,7 +575,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         if (!typeL.equals(typeE)){
             int line = ctx.getStart().getLine();
             int column = ctx.getStart().getCharPositionInLine();
-            _errors.add(new Exception("Error tipo location: '"+typeL+"' no concuerda typo expression: '"+typeE+"' @line: "+line+" @column: "+column));
+            _errors.add(new Exception("Error tipo location: '"+typeL+"' no concuerda tipo expression: '"+typeE+"' @line: "+line+" @column: "+column));
             return null;
         }
         
@@ -558,7 +647,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             }
             //si ya no se llama a location
             String type = "struct"+ var1.getStructID().getStructID();//'struct' 'ID'
-            if (var.isArray()) type += "array";
+            if (var1.isArray()) type += "array";
             
             Object[] returnO = {type,""};
             return returnO; 
@@ -671,7 +760,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             }
             //si ya no se llama a location
             String type = "struct"+ var1.getStructID().getStructID();//'struct' 'ID'
-            if (var.isArray()) type += "array";
+            if (var1.isArray()) type += "array";
             
             Object[] returnO = {type,""};
             return returnO; 
@@ -724,8 +813,358 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         }
     }
     
-    public Object visitExpression (ExpressionContext ctx){
-        return null;
+    public Object visitExpOPExp (ExpOPExpContext ctx){
+        
+        Object objE1 = visit(ctx.expression(0));
+        if (objE1 == null){
+            int line = ctx.expression(0).getStart().getLine();
+            int column = ctx.expression(0).getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de expression @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object[] type_codeE1 = (Object[])objE1;
+        String typeE1 = (String) type_codeE1[0];//guarda el tipo del expression
+        String codeE1 = (String) type_codeE1[1];//guarda el codigo intermedio del expression
+        
+        Object objE2 = visit(ctx.expression(1));
+        if (objE2 == null){
+            int line = ctx.expression(1).getStart().getLine();
+            int column = ctx.expression(1).getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de expression @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object[] type_codeE2 = (Object[])objE2;
+        String typeE2 = (String) type_codeE2[0];//guarda el tipo del expression
+        String codeE2 = (String) type_codeE2[1];//guarda el codigo intermedio del expression
+        
+        String op = (String)visit(ctx.op());//op
+        
+        if (!typeE2.equals(typeE1)){
+            int line = ctx.op().getStart().getLine();
+            int column = ctx.op().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en tipo: '"+typeE1+"' no comparable con tipo: '"+typeE2+"' @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        //'<' | '>' | '<=' | '>='
+        //'==' | '!='
+        //'&&' | '||'
+        
+        switch (op){
+            case "<":
+                if (!typeE1.equals("int")){
+                    int line = ctx.op().getStart().getLine();
+                    int column = ctx.op().getStart().getCharPositionInLine();
+                    _errors.add(new Exception("Error en tipo: '"+typeE1+"' no comparable '<' @line: "+line+" @column: "+column));
+                    return null;
+                }
+                break;
+            case ">":
+                if (!typeE1.equals("int")){
+                    int line = ctx.op().getStart().getLine();
+                    int column = ctx.op().getStart().getCharPositionInLine();
+                    _errors.add(new Exception("Error en tipo: '"+typeE1+"' no comparable '>' @line: "+line+" @column: "+column));
+                    return null;
+                }
+                break;
+            case "<=":
+                if (!typeE1.equals("int")){
+                    int line = ctx.op().getStart().getLine();
+                    int column = ctx.op().getStart().getCharPositionInLine();
+                    _errors.add(new Exception("Error en tipo: '"+typeE1+"' no comparable '<=' @line: "+line+" @column: "+column));
+                    return null;
+                }
+                break;
+            case ">=":
+                if (!typeE1.equals("int")){
+                    int line = ctx.op().getStart().getLine();
+                    int column = ctx.op().getStart().getCharPositionInLine();
+                    _errors.add(new Exception("Error en tipo: '"+typeE1+"' no comparable '>=' @line: "+line+" @column: "+column));
+                    return null;
+                }
+                break;
+            case "==":
+                break;
+            case "!=":
+                break;
+            case "&&":
+                if (!typeE1.equals("boolean")){
+                    int line = ctx.op().getStart().getLine();
+                    int column = ctx.op().getStart().getCharPositionInLine();
+                    _errors.add(new Exception("Error en tipo: '"+typeE1+"' no comparable '&&' @line: "+line+" @column: "+column));
+                    return null;
+                }
+                break;
+            case "||":
+                if (!typeE1.equals("boolean")){
+                    int line = ctx.op().getStart().getLine();
+                    int column = ctx.op().getStart().getCharPositionInLine();
+                    _errors.add(new Exception("Error en tipo: '"+typeE1+"' no comparable '||' @line: "+line+" @column: "+column));
+                    return null;
+                }
+                break; 
+        }
+        
+        
+        
+        Object[] returnO = {"boolean",""};
+        return returnO; 
+    }
+    
+    public Object visitExpMinus (ExpMinusContext ctx){
+        Object obj = visit(ctx.expression());
+        
+        if (obj == null){
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de expression @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object[] type_code = (Object[])obj;
+        String type = (String) type_code[0];//guarda el tipo del expression
+        String code = (String) type_code[1];//guarda el codigo intermedio del expression
+        
+        if (!type.equals("int")){
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en tipo: '"+type+"' no aplicable '-' @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object[] returnO = {"int",""};
+        return returnO;
+    }
+    
+    public Object visitExpNot (ExpNotContext ctx){
+        Object obj = visit(ctx.expression());
+        
+        if (obj == null){
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de expression @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object[] type_code = (Object[])obj;
+        String type = (String) type_code[0];//guarda el tipo del expression
+        String code = (String) type_code[1];//guarda el codigo intermedio del expression
+        
+        if (!type.equals("boolean")){
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en tipo: '"+type+"' no aplicable '!' @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object[] returnO = {"boolean",""};
+        return returnO;
+    }
+    
+    public Object visitExpPexp (ExpPexpContext ctx){
+        return visit(ctx.expression());
+    }
+    
+    public Object visitMethodCall (MethodCallContext ctx){
+        String id = ctx.ID().getText();//nombre
+        Method mt = _scopes.get(0).hasMethodDef(id);
+        
+        if (mt == null){
+            int line = ctx.getStart().getLine();
+            int column = ctx.getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error metodo '"+id+"' no definido @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        ArrayList<String> params = new ArrayList();
+        for (ArgContext arg: ctx.arg()){
+            Object obj = visit(arg);
+            if (obj == null){
+                int line = arg.getStart().getLine();
+                int column = arg.getStart().getCharPositionInLine();
+                _errors.add(new Exception("Error en definicion de parametro @line: "+line+" @column: "+column));
+                return null;
+            }
+            
+            Object[] type_code = (Object[])obj;
+            String type = (String) type_code[0];//guarda el tipo del expression
+            String code = (String) type_code[1];//guarda el codigo intermedio del expression
+            params.add(type);
+        }
+        
+        if (params.size() != mt.getParams().size()){
+            int line = ctx.getStart().getLine();
+            int column = ctx.getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de parametros, se esperan "+mt.getParams().size()+"' parametros @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        int i = 0;
+        for (Variable v: mt.getParams()){
+            String typeParam = params.get(i);
+            String typeVar = v.getVarType();
+            if (typeVar.equals("struct")){
+                typeVar += ((StructVar)v).getStructID().getStructID();
+            }
+            if (v.isArray()) typeVar += "array";
+            
+            if (!typeParam.equals(typeVar)){//si no son iguales
+                int line = ctx.getStart().getLine();
+                int column = ctx.getStart().getCharPositionInLine();
+                _errors.add(new Exception("Error en definicion de parametros, se esperaba "+typeVar+"', se obtuvo '"+typeParam+"' @line: "+line+" @column: "+column));
+                return null;
+            }
+            i++;
+        }
+        
+        
+        
+        Object[] returnO = {mt.getMetType(),""};
+        return returnO;
+    }
+    
+    public Object visitPlusOrMinus (PlusOrMinusContext ctx){
+        if (ctx.multOrDiv() != null) return visitChildren(ctx);//retornamos mulOrDiv
+        
+        Object obj1 = visit(ctx.plusOrMinus());
+        if (obj1 == null){
+            int line = ctx.plusOrMinus().getStart().getLine();
+            int column = ctx.plusOrMinus().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de plusOrMinus @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object obj2 = visit(ctx.multOrDiv());
+        if (obj2 == null){
+            int line = ctx.multOrDiv().getStart().getLine();
+            int column = ctx.multOrDiv().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de multOrDiv @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object[] type_code1 = (Object[])obj1;
+        String type1 = (String) type_code1[0];//guarda el tipo del expression
+        String code1 = (String) type_code1[1];//guarda el codigo intermedio del expression
+        
+        Object[] type_code2 = (Object[])obj2;
+        String type2 = (String) type_code2[0];//guarda el tipo del expression
+        String code2 = (String) type_code2[1];//guarda el codigo intermedio del expression
+        
+        if (!type1.equals("int")){
+            int line = ctx.plusOrMinus().getStart().getLine();
+            int column = ctx.plusOrMinus().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de plusOrMinus no es de tipo int @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        if (!type2.equals("int")){
+            int line = ctx.multOrDiv().getStart().getLine();
+            int column = ctx.multOrDiv().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de multOrDiv no es tipo int @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        
+        Object[] returnO = {"int",""};
+        return returnO;
+    }
+    
+    public Object visitMultOrDiv (MultOrDivContext ctx){
+        if (ctx.getChildCount() <=1) return visitChildren(ctx);
+        
+        Object obj1 = visit(ctx.multOrDiv());
+        if (obj1 == null){
+            int line = ctx.multOrDiv().getStart().getLine();
+            int column = ctx.multOrDiv().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de multOrDiv @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object obj2 = visit(ctx.pow());
+        if (obj2 == null){
+            int line = ctx.pow().getStart().getLine();
+            int column = ctx.pow().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de pow @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object[] type_code1 = (Object[])obj1;
+        String type1 = (String) type_code1[0];//guarda el tipo del expression
+        String code1 = (String) type_code1[1];//guarda el codigo intermedio del expression
+        
+        Object[] type_code2 = (Object[])obj2;
+        String type2 = (String) type_code2[0];//guarda el tipo del expression
+        String code2 = (String) type_code2[1];//guarda el codigo intermedio del expression
+        
+        if (!type1.equals("int")){
+            int line = ctx.multOrDiv().getStart().getLine();
+            int column = ctx.multOrDiv().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de multOrDiv no es de tipo int @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        if (!type2.equals("int")){
+            int line = ctx.pow().getStart().getLine();
+            int column = ctx.pow().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de multOrDiv no es tipo int @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        
+        Object[] returnO = {"int",""};
+        return returnO;
+    }
+    
+    public Object visitOp (OpContext ctx){
+        return ctx.getText();
+    }
+    
+    public Object visitUnaryMinus (UnaryMinusContext ctx){
+        if (ctx.unaryMinus() != null){
+            Object obj = visit(ctx.unaryMinus());
+            if (obj == null){
+                int line = ctx.unaryMinus().getStart().getLine();
+                int column = ctx.unaryMinus().getStart().getCharPositionInLine();
+                _errors.add(new Exception("Error en definicion de unaryMinus @line: "+line+" @column: "+column));
+                return null;
+            }
+        }else{
+            Object obj = visit(ctx.atom());
+            if (obj == null){
+                int line = ctx.atom().getStart().getLine();
+                int column = ctx.atom().getStart().getCharPositionInLine();
+                _errors.add(new Exception("Error en definicion de atom @line: "+line+" @column: "+column));
+                return null;
+            }
+        }
+        
+        
+        Object[] returnO = {"int",""};
+        return returnO;
+        
+    }
+    
+    public Object visitAtom (AtomContext ctx){
+        if (ctx.plusOrMinus() != null) return visit(ctx.plusOrMinus());
+        
+        return visitChildren(ctx);
+    }
+    
+    public Object visitBool_literal (Bool_literalContext ctx){
+        Object[] returnO = {"boolean",ctx.getText()};
+        return returnO;
+    }
+    
+    public Object visitChar_literal (Char_literalContext ctx){
+        Object[] returnO = {"char",ctx.getText()};
+        return returnO;
+    }
+    
+    public Object visitInt_literal (Int_literalContext ctx){
+        Object[] returnO = {"int",ctx.getText()};
+        return returnO;
     }
     
     public Object visitParameter (ParameterContext ctx){

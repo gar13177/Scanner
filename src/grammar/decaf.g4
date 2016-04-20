@@ -46,7 +46,7 @@ parameterType: 'int'
              | 'char' 
              | 'boolean'  ;
 
-block : '{' (varDeclaration)* (statement)* '}' ;
+block : '{' (varDeclaration |statement)* '}' ;
 
 statement : 'if' '(' expression ')' block ( 'else' block )? #statementIf
            | 'while' '(' expression ')' block #statementWhile

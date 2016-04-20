@@ -146,7 +146,7 @@ public class queryView extends JFrame implements ActionListener{
 		GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
 		int width = gd.getDisplayMode().getWidth();
 		int height = gd.getDisplayMode().getHeight();
-		this.setBounds(100, 100, (width/2), (height/2));
+		this.setBounds(100, 100, (2*width/3), (2*height/3));
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		
@@ -386,7 +386,7 @@ public class queryView extends JFrame implements ActionListener{
 		this.getContentPane().add(splitPane1, BorderLayout.CENTER);
 		
 		JSplitPane splitPane = new JSplitPane();
-		splitPane.setResizeWeight(0.5);
+		splitPane.setResizeWeight(0.9);
 		splitPane.setContinuousLayout(true);
 		splitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
 		
@@ -820,13 +820,6 @@ public class queryView extends JFrame implements ActionListener{
                     semantic_checker.visit(tree);
                    
                     long estimatedTime = System.nanoTime()-startTime;
-
-                    if (semantic_checker.getError().size()>0){
-                        dataOutputArea.setText(semantic_checker.toStringError()+"\n"+calculateTime(estimatedTime));
-                    }else{
-                        dataOutputArea.setText("Terminado"+"\n"+calculateTime(estimatedTime));
-                    }
-                    
                     
                     // Generar verbose
                     if (isVerbose){
@@ -834,6 +827,15 @@ public class queryView extends JFrame implements ActionListener{
                             this.recursiveRoot(tree);
                             dataVerbose.setText(toStringVerbose());
                     }
+                    
+                    if (semantic_checker.getError().size()>0){
+                        dataOutputArea.setText(semantic_checker.toStringError()+"\n"+calculateTime(estimatedTime));
+                    }else{
+                        dataOutputArea.setText("Terminado"+"\n"+calculateTime(estimatedTime));
+                    }
+                    
+                    
+                    
                     
                   
 		} catch (Exception e){
