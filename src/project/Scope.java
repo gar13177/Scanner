@@ -126,6 +126,17 @@ public class Scope {
         return null;
     }
     
+    public int offsetOfVar(String ID){
+        int offset = 0;
+        for (Variable v: _vars){
+            if (v.getVarId().equals(ID)){
+                return offset;
+            }
+            offset += v.getTotalSize();
+        }
+        return offset;
+    }
+    
     public Method hasMethodDef(String ID){
         for (Method mt: _methods){
             if (mt.getMetID().equals(ID)){

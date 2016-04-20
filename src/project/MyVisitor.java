@@ -23,11 +23,14 @@ public class MyVisitor extends decafBaseVisitor<Object> {
     private Stack<Exception> _errors;//errores
     private Method _methodRevision;
     
+    private IntermediateCodeBuilder _interCode = new IntermediateCodeBuilder();
+    
     public void initAll(){
         _types = new LinkedHashSet();
         _scopes = new Stack();
         _scopes.push(new Scope());
         _errors = new Stack();
+        _interCode = new IntermediateCodeBuilder();
     }
     
     public Object visitProgram(ProgramContext ctx){
@@ -42,15 +45,16 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             }
         }
         
-        if (_errors.empty())
+        if (_errors.empty()){
+            System.out.println(_interCode);
             return null;
-        
+        }
         //else: crear codigo intermedio
         return null;
     }
     
     public Object visitDeclaration(DeclarationContext ctx){
-       
+        
         if (ctx.methodDeclaration() != null){
             visitChildren(ctx);//
             return "void";
@@ -153,6 +157,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         
         if (ctx.getChild(0).getText().equals("boolean")){
             Object[] obj = {"boolean", 1};
+            return obj;
         }
         
         if (ctx.getChild(0).getText().equals("struct")){
@@ -250,6 +255,9 @@ public class MyVisitor extends decafBaseVisitor<Object> {
     public Object visitMethodDeclaration(MethodDeclarationContext ctx){
         String type = ctx.methodType().getText();
         String id = ctx.ID().toString();
+        
+        _interCode.newMethod(id);
+        
         LinkedHashSet<Variable> parameters = new LinkedHashSet();
         boolean errores = false;
         for (ParameterContext pr: ctx.parameter()){
@@ -322,6 +330,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         
         if (errores) return null;
         
+        _interCode.buildMethod();
        
         return "void";
     }
@@ -424,6 +433,9 @@ public class MyVisitor extends decafBaseVisitor<Object> {
     }
     
     public Object visitStatementIf (StatementIfContext ctx){
+        
+        
+        
         Object obj = visit(ctx.expression());//visitamos expression
         if (obj == null){
             int line = ctx.expression().getStart().getLine();
@@ -444,6 +456,10 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             _errors.add(new Exception("Error en expression no booleana @line: "+line+" @column: "+column));
             return null;
         }
+        
+        _interCode.newIf();
+        
+        int i = 0;
         for (BlockContext bc: ctx.block()){
             Object objB = visit(bc);//visitamos bloque
             
@@ -456,12 +472,20 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             Object[] type_codeB = (Object[])objB;
             String typeB = (String) type_code[0];//guarda el tipo del statement
             String codeB = (String) type_code[1];//guarda el codigo intermedio del statement
+            if (i==0) _interCode.newElse();
+            i++;
         }
+        
+        _interCode.endIf();
+        
         Object[] returnO = {"void",""};
         return returnO ;
     }
     
     public Object visitStatementWhile (StatementWhileContext ctx){
+        
+        _interCode.newWhile();
+        
         Object obj = visit(ctx.expression());//visitamos expression
         if (obj == null){
             int line = ctx.expression().getStart().getLine();
@@ -469,6 +493,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             _errors.add(new Exception("Error en expression @line: "+line+" @column: "+column));
             return null;
         }
+        
+        _interCode.meanWhile();
         
         Object[] type_code = (Object[])obj;
         String type = (String) type_code[0];//guarda el tipo del statement
@@ -492,6 +518,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         Object[] type_codeB = (Object[])objB;
         String typeB = (String) type_code[0];//guarda el tipo del statement
         String codeB = (String) type_code[1];//guarda el codigo intermedio del statement
+        
+        _interCode.endWhile();
 
         Object[] returnO = {"void",""};
         return returnO;
@@ -509,6 +537,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                     return null;
                 }else{
                     mt.setReturn(true);
+                    _interCode.buildReturnVoid();
                     Object[] returnO = {"void",""};
                     return returnO;
                 }
@@ -537,6 +566,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                 return null;
             }else{
                 mt.setReturn(true);
+                _interCode.buildReturn();
                 Object[] returnO = {"void",""};
                 return returnO;
             }
@@ -558,7 +588,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         Object[] type_codeL = (Object[])objL;
         String typeL = (String) type_codeL[0];//guarda el tipo del statement
         String codeL = (String) type_codeL[1];//guarda el codigo intermedio del statement
-        
+        //location 
+        _interCode.pushTempActual();
         
         Object objE = visit(ctx.expression());
         if (objE == null){
@@ -578,6 +609,11 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             _errors.add(new Exception("Error tipo location: '"+typeL+"' no concuerda tipo expression: '"+typeE+"' @line: "+line+" @column: "+column));
             return null;
         }
+        //tenemos expression
+        _interCode.setLastAsLeft();
+        _interCode.popTempActual();
+        _interCode.setLastAsEq();
+        _interCode.buildEqual();
         
         Object[] returnO = {"void",""};
         return returnO; 
@@ -588,8 +624,11 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         return visit(ctx.expression());//retornamos valor de expression
     }
     
-    public Object visitLocation (LocationContext ctx){
+    public Object visitLocationID(LocationIDContext ctx){
         Variable var = _scopes.peek().hasVariableDef(ctx.ID().getText());
+        
+        int offset =0;
+        boolean global = false;
         if (var == null){
             var = _scopes.get(0).hasVariableDef(ctx.ID().getText());
             if (var == null){
@@ -598,111 +637,30 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                 _errors.add(new Exception("Error variable '"+ctx.ID().getText()+"' no definida @line: "+line+" @column: "+column));
                 return null;
             }
+            offset = _scopes.get(0).offsetOfVar(ctx.ID().getText());
+            _interCode.setIntLiteral(""+offset);
+            _interCode.setGlobalPointer();
+        }else{
+            offset = _scopes.peek().offsetOfVar(ctx.ID().getText());//extraigo offset desde inicio
+            _interCode.setIntLiteral(""+offset);
+            _interCode.setLocalPointer();
+            
         }
-        
-        if (var instanceof StructVar){
-            StructVar var1 = (StructVar)var;//guardo structvar
-            if (ctx.expression() != null){//quiere decir que se llama como array
-                if (!var1.isArray()){//si no es array
-                    int line = ctx.expression().getStart().getLine();
-                    int column = ctx.expression().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error variable '"+ctx.ID().getText()+"' no definida como array @line: "+line+" @column: "+column));
-                    return null;
-                }
-                //quiere decir que si es array, y se esta llamando expression
-                Object obj = visit(ctx.expression());//visitamos expression
-                if (obj == null){//error en expression
-                    int line = ctx.expression().getStart().getLine();
-                    int column = ctx.expression().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error en expression @line: "+line+" @column: "+column));
-                    return null;
-                }
-                
-                //si no existe error
-                Object[] type_codeE = (Object[])obj;
-                String typeE = (String) type_codeE[0];//guarda el tipo del expression
-                String codeE = (String) type_codeE[1];//guarda el codigo intermedio del expression
-                
-                if (!typeE.equals("int")){
-                    int line = ctx.expression().getStart().getLine();
-                    int column = ctx.expression().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error en expression no de tipo int @line: "+line+" @column: "+column));
-                    return null;
-                }
-                
-                var1 = new StructVar(ctx.ID().getText(),var1.getStructID());//re escribimos var1 como un solo elemento
-                //quiere decir que la llamada es correcta, si es array, y se esta buscando un elemento
-            }
-            
-            //ya sabemos si se esta llamando a un solo ID o si es a una casilla del ID
-            if (ctx.location() != null){//si se sigue llamando a location
-                if (var1.isArray()){//quiere decir que se llama location a un array
-                    int line = ctx.location().getStart().getLine();
-                    int column = ctx.location().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error variable tipo array no tiene location definido @line: "+line+" @column: "+column));
-                    return null;
-                }
-                
-                return visitLocationContinuous(ctx.location(),var1);//retornamos el valor del location
-            }
-            //si ya no se llama a location
-            String type = "struct"+ var1.getStructID().getStructID();//'struct' 'ID'
-            if (var1.isArray()) type += "array";
-            
-            Object[] returnO = {type,""};
-            return returnO; 
-        }else{//no es structvar
-            if (ctx.expression() != null){//quiere decir que se llama como array
-                if (!var.isArray()){//si no es array
-                    int line = ctx.expression().getStart().getLine();
-                    int column = ctx.expression().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error variable '"+ctx.ID().getText()+"' no definida como array @line: "+line+" @column: "+column));
-                    return null;
-                }
-                //quiere decir que si es array, y se esta llamando expression
-                Object obj = visit(ctx.expression());//visitamos expression
-                if (obj == null){//error en expression
-                    int line = ctx.expression().getStart().getLine();
-                    int column = ctx.expression().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error en expression @line: "+line+" @column: "+column));
-                    return null;
-                }
-                
-                //si no existe error
-                Object[] type_codeE = (Object[])obj;
-                String typeE = (String) type_codeE[0];//guarda el tipo del expression
-                String codeE = (String) type_codeE[1];//guarda el codigo intermedio del expression
-                
-                if (!typeE.equals("int")){
-                    int line = ctx.expression().getStart().getLine();
-                    int column = ctx.expression().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error en expression no de tipo int @line: "+line+" @column: "+column));
-                    return null;
-                }
-                
-                var = new Variable(var.getVarId(),var.getVarType(), var.getSize());//re escribimos var1 como un solo elemento
-                //quiere decir que la llamada es correcta, si es array, y se esta buscando un elemento
-            }
-            
-            //ya sabemos si se esta llamando a un solo ID o si es a una casilla del ID
-            if (ctx.location() != null){//si se sigue llamando a location aunque no es struct
-                int line = ctx.location().getStart().getLine();
-                int column = ctx.location().getStart().getCharPositionInLine();
-                _errors.add(new Exception("Error variable no definida como 'struct' @line: "+line+" @column: "+column));
-                return null;
-            }
-            
-            String type = var.getVarType();//'tipo'
-            if (var.isArray()) type += "array";
-            
-            Object[] returnO = {type,""};
-            return returnO; 
+        String type = var.getVarType();//'tipo'
+        if (type.equals("struct")){
+            type+= ((StructVar) var).getStructID().getStructID();
         }
-        
+        if (var.isArray()) type += "array";
+
+        Object[] returnO = {type,""};
+        return returnO; 
     }
     
-    public Object visitLocationContinuous (LocationContext ctx, StructVar varCheck){
-        Variable var = varCheck.getStructID().hasVariable(ctx.ID().getText());
+    public Object visitLocationExp(LocationExpContext ctx){
+        Variable var = _scopes.peek().hasVariableDef(ctx.ID().getText());
+        
+        int offset =0;
+        boolean global = false;
         if (var == null){
             var = _scopes.get(0).hasVariableDef(ctx.ID().getText());
             if (var == null){
@@ -711,106 +669,436 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                 _errors.add(new Exception("Error variable '"+ctx.ID().getText()+"' no definida @line: "+line+" @column: "+column));
                 return null;
             }
+            offset = _scopes.get(0).offsetOfVar(ctx.ID().getText());
+            global = true;
+        }else{
+            offset = _scopes.peek().offsetOfVar(ctx.ID().getText());//extraigo offset desde inicio
+            
+            
         }
         
-        if (var instanceof StructVar){
-            StructVar var1 = (StructVar)var;//guardo structvar
-            if (ctx.expression() != null){//quiere decir que se llama como array
-                if (!var1.isArray()){//si no es array
-                    int line = ctx.expression().getStart().getLine();
-                    int column = ctx.expression().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error variable '"+ctx.ID().getText()+"' no definida como array @line: "+line+" @column: "+column));
-                    return null;
-                }
-                //quiere decir que si es array, y se esta llamando expression
-                Object obj = visit(ctx.expression());//visitamos expression
-                if (obj == null){//error en expression
-                    int line = ctx.expression().getStart().getLine();
-                    int column = ctx.expression().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error en expression @line: "+line+" @column: "+column));
-                    return null;
-                }
-                
-                //si no existe error
-                Object[] type_codeE = (Object[])obj;
-                String typeE = (String) type_codeE[0];//guarda el tipo del expression
-                String codeE = (String) type_codeE[1];//guarda el codigo intermedio del expression
-                
-                if (!typeE.equals("int")){
-                    int line = ctx.expression().getStart().getLine();
-                    int column = ctx.expression().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error en expression no de tipo int @line: "+line+" @column: "+column));
-                    return null;
-                }
-                
-                var1 = new StructVar(ctx.ID().getText(),var1.getStructID());//re escribimos var1 como un solo elemento
-                //quiere decir que la llamada es correcta, si es array, y se esta buscando un elemento
-            }
-            
-            //ya sabemos si se esta llamando a un solo ID o si es a una casilla del ID
-            if (ctx.location() != null){//si se sigue llamando a location
-                if (var1.isArray()){//quiere decir que se llama location a un array
-                    int line = ctx.location().getStart().getLine();
-                    int column = ctx.location().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error variable tipo array no tiene location definido @line: "+line+" @column: "+column));
-                    return null;
-                }
-                
-                return visitLocationContinuous(ctx.location(),var1);//retornamos el valor del location
-            }
-            //si ya no se llama a location
-            String type = "struct"+ var1.getStructID().getStructID();//'struct' 'ID'
-            if (var1.isArray()) type += "array";
-            
-            Object[] returnO = {type,""};
-            return returnO; 
-        }else{//no es structvar
-            if (ctx.expression() != null){//quiere decir que se llama como array
-                if (!var.isArray()){//si no es array
-                    int line = ctx.expression().getStart().getLine();
-                    int column = ctx.expression().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error variable '"+ctx.ID().getText()+"' no definida como array @line: "+line+" @column: "+column));
-                    return null;
-                }
-                //quiere decir que si es array, y se esta llamando expression
-                Object obj = visit(ctx.expression());//visitamos expression
-                if (obj == null){//error en expression
-                    int line = ctx.expression().getStart().getLine();
-                    int column = ctx.expression().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error en expression @line: "+line+" @column: "+column));
-                    return null;
-                }
-                
-                //si no existe error
-                Object[] type_codeE = (Object[])obj;
-                String typeE = (String) type_codeE[0];//guarda el tipo del expression
-                String codeE = (String) type_codeE[1];//guarda el codigo intermedio del expression
-                
-                if (!typeE.equals("int")){
-                    int line = ctx.expression().getStart().getLine();
-                    int column = ctx.expression().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error en expression no de tipo int @line: "+line+" @column: "+column));
-                    return null;
-                }
-                
-                var = new Variable(var.getVarId(),var.getVarType(), var.getSize());//re escribimos var1 como un solo elemento
-                //quiere decir que la llamada es correcta, si es array, y se esta buscando un elemento
-            }
-            
-            //ya sabemos si se esta llamando a un solo ID o si es a una casilla del ID
-            if (ctx.location() != null){//si se sigue llamando a location aunque no es struct
-                int line = ctx.location().getStart().getLine();
-                int column = ctx.location().getStart().getCharPositionInLine();
-                _errors.add(new Exception("Error variable no definida como 'struct' @line: "+line+" @column: "+column));
+        if (!var.isArray()){
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable '"+ctx.ID().getText()+"' no definida como array @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        //quiere decir que si es array, y se esta llamando expression
+        Object obj = visit(ctx.expression());//visitamos expression
+        if (obj == null){//error en expression
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en expression @line: "+line+" @column: "+column));
+            return null;
+        }
+
+        //si no existe error
+        Object[] type_codeE = (Object[])obj;
+        String typeE = (String) type_codeE[0];//guarda el tipo del expression
+        String codeE = (String) type_codeE[1];//guarda el codigo intermedio del expression
+        
+        //expression ya tiene el valor del indice
+        if (!typeE.equals("int")){
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en expression no de tipo int @line: "+line+" @column: "+column));
+            return null;
+        }
+
+        _interCode.setLastAsLeft();//tenemos las posiciones en la izquierda gracias a expression
+        //_interCode.setIntLiteral(""+offset);
+
+        Variable var1 = new Variable();
+        if (var.getVarType().equals("struct")){
+            var1 = new StructVar(ctx.ID().getText(),((StructVar)var).getStructID());
+        }else{
+            var1 = new Variable(var.getVarId(),var.getVarType(), var.getSize());
+        }
+        
+        _interCode.setIntLiteral(var1.getTotalSize()+"");//tomamos el tamanio de dicha variable
+        _interCode.setLastAsRight();
+        _interCode.buildOperation("*");//multiplicamos para llegar al offset
+        _interCode.setLastAsLeft();
+        _interCode.setIntLiteral(""+offset);
+        _interCode.setLastAsRight();
+        _interCode.buildOperation("+");
+        if (global){
+            _interCode.setGlobalPointer();
+        }else{
+            _interCode.setLocalPointer();
+        }
+
+        String type = var1.getVarType();//'tipo'
+        
+        if (type.equals("struct")){
+            type+= ((StructVar) var1).getStructID().getStructID();
+        }
+        if (var1.isArray()) type += "array";
+
+        Object[] returnO = {type,""};
+        return returnO; 
+    }
+    
+    public Object visitLocationIDlocation(LocationIDlocationContext ctx){
+        Variable var = _scopes.peek().hasVariableDef(ctx.ID().getText());
+        
+        int offset =0;
+        boolean global = false;
+        if (var == null){
+            var = _scopes.get(0).hasVariableDef(ctx.ID().getText());
+            if (var == null){
+                int line = ctx.getStart().getLine();
+                int column = ctx.getStart().getCharPositionInLine();
+                _errors.add(new Exception("Error variable '"+ctx.ID().getText()+"' no definida @line: "+line+" @column: "+column));
                 return null;
             }
+            offset = _scopes.get(0).offsetOfVar(ctx.ID().getText());
+            global = true;
+        }else{
+            offset = _scopes.peek().offsetOfVar(ctx.ID().getText());//extraigo offset desde inicio 
             
-            String type = var.getVarType();//'tipo'
-            if (var.isArray()) type += "array";
-            
-            Object[] returnO = {type,""};
-            return returnO; 
         }
+        
+        String type = var.getVarType();//'tipo'
+        if (!type.equals("struct")){//no es struct y se llama a location
+            int line = ctx.location().getStart().getLine();
+            int column = ctx.location().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable no definida como 'struct' @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        if (var.isArray()){
+            int line = ctx.location().getStart().getLine();
+            int column = ctx.location().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable tipo array no tiene location definido @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object obj = visitLocationContinuos(ctx.location(), (StructVar)var);
+        //retorna el valor del offset
+        _interCode.setLastAsLeft();
+        
+        _interCode.setIntLiteral(""+offset);
+        _interCode.setLastAsRight();
+        _interCode.buildOperation("+");
+        if (global){
+            _interCode.setGlobalPointer();
+        }else{
+            _interCode.setLocalPointer();
+        }
+        
+        return obj;
+    }
+    
+    public Object visitLocationExplocation (LocationExplocationContext ctx){
+        Variable var = _scopes.peek().hasVariableDef(ctx.ID().getText());
+        
+        int offset =0;
+        boolean global = false;
+        if (var == null){
+            var = _scopes.get(0).hasVariableDef(ctx.ID().getText());
+            if (var == null){
+                int line = ctx.getStart().getLine();
+                int column = ctx.getStart().getCharPositionInLine();
+                _errors.add(new Exception("Error variable '"+ctx.ID().getText()+"' no definida @line: "+line+" @column: "+column));
+                return null;
+            }
+            offset = _scopes.get(0).offsetOfVar(ctx.ID().getText());
+            global = true;
+        }else{
+            offset = _scopes.peek().offsetOfVar(ctx.ID().getText());//extraigo offset desde inicio    
+        }
+        
+        
+        if (!var.isArray()){//si no es array
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable tipo array no tiene location definido @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object obj = visit(ctx.expression());//visitamos expression
+        if (obj == null){//error en expression
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en expression @line: "+line+" @column: "+column));
+            return null;
+        }
+
+        //si no existe error
+        Object[] type_codeE = (Object[])obj;
+        String typeE = (String) type_codeE[0];//guarda el tipo del expression
+        String codeE = (String) type_codeE[1];//guarda el codigo intermedio del expression
+
+        if (!typeE.equals("int")){
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en expression no de tipo int @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        //si todo esta bien, expression tiene el offset en el ultimo
+        _interCode.setLastAsLeft();//tomamos el tamanio y lo ponemos de izquierdo
+        
+        String type = var.getVarType();//'tipo'
+        if (!type.equals("struct")){//no es struct y se llama a location
+            int line = ctx.location().getStart().getLine();
+            int column = ctx.location().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable no definida como 'struct' @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        int objLength = 0;
+        StructVar nvar = new StructVar(var.getVarId(),((StructVar)var).getStructID());
+        objLength = nvar.getTotalSize();//tomamos todo el tamanio de esa onda
+        type+= ((StructVar) var).getStructID().getStructID();
+        
+        
+        
+        _interCode.setIntLiteral(""+objLength);//tomamos el tamanio de cada objeto
+        _interCode.setLastAsRight();
+        _interCode.buildOperation("*");//multiplicamos ambas partes
+        
+        _interCode.setLastAsLeft();//tomamos el resultado y lo colocamos a la izquierda
+        _interCode.setIntLiteral(""+offset);//agregamos el offset de esta variable
+        _interCode.setLastAsRight();
+        _interCode.buildOperation("+");
+        _interCode.pushTempActual();
+        
+        Object obj1 = visitLocationContinuos(ctx.location(),nvar);
+        _interCode.setLastAsLeft();//colocamos el offset a la izquierda
+        _interCode.popTempActual();
+        _interCode.setLastAsRight();
+        _interCode.buildOperation("+");
+        if (global){
+            _interCode.setGlobalPointer();
+        }else{
+            _interCode.setLocalPointer();
+        }
+        
+        return obj1;
+    }
+    
+    public Object visitLocationIDContext(LocationIDContext ctx, StructVar varCheck){
+        Variable var = varCheck.getStructID().hasVariable(ctx.ID().getText());
+        if (var == null){
+            int line = ctx.getStart().getLine();
+            int column = ctx.getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable '"+ctx.ID().getText()+"' no definida @line: "+line+" @column: "+column));
+            return null;
+            
+        }
+        int offset = varCheck.getStructID().offsetOfVar(ctx.ID().getText());
+        
+        _interCode.setIntLiteral(""+offset);
+        
+        String type = var.getVarType();//'tipo'
+        if (type.equals("struct")){
+            type+= ((StructVar) var).getStructID().getStructID();
+        }
+        if (var.isArray()) type += "array";
+
+        Object[] returnO = {type,""};
+        return returnO;
+    }
+    
+    public Object visitLocationIDlocation(LocationIDlocationContext ctx, StructVar varCheck){
+        Variable var = varCheck.getStructID().hasVariable(ctx.ID().getText());
+        if (var == null){
+            int line = ctx.getStart().getLine();
+            int column = ctx.getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable '"+ctx.ID().getText()+"' no definida @line: "+line+" @column: "+column));
+            return null;
+            
+        }
+        
+        String type = var.getVarType();//'tipo'
+        if (!type.equals("struct")){//no es struct y se llama a location
+            int line = ctx.location().getStart().getLine();
+            int column = ctx.location().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable no definida como 'struct' @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        if (var.isArray()){
+            int line = ctx.location().getStart().getLine();
+            int column = ctx.location().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable tipo array no tiene location definido @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object obj = visitLocationContinuos(ctx.location(), (StructVar)var);
+        //retorna el valor del offset
+        _interCode.setLastAsLeft();
+        
+        int offset = varCheck.getStructID().offsetOfVar(ctx.ID().getText());
+        
+        _interCode.setIntLiteral(""+offset);
+        _interCode.setLastAsRight();
+        _interCode.buildOperation("+");
+        
+        return obj;
+    }
+    
+    public Object visitLocationExpContext(LocationExpContext ctx, StructVar varCheck){
+        Variable var = varCheck.getStructID().hasVariable(ctx.ID().getText());
+        if (var == null){
+            int line = ctx.getStart().getLine();
+            int column = ctx.getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable '"+ctx.ID().getText()+"' no definida @line: "+line+" @column: "+column));
+            return null;
+            
+        }
+        int offset = varCheck.getStructID().offsetOfVar(ctx.ID().getText());
+        
+        if (!var.isArray()){//si no es array
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable tipo array no tiene location definido @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object obj = visit(ctx.expression());//visitamos expression
+        if (obj == null){//error en expression
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en expression @line: "+line+" @column: "+column));
+            return null;
+        }
+
+        //si no existe error
+        Object[] type_codeE = (Object[])obj;
+        String typeE = (String) type_codeE[0];//guarda el tipo del expression
+        String codeE = (String) type_codeE[1];//guarda el codigo intermedio del expression
+
+        if (!typeE.equals("int")){
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en expression no de tipo int @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        //si todo esta bien, expression tiene el offset en el ultimo
+        _interCode.setLastAsLeft();//tomamos el tamanio y lo ponemos de izquierdo
+        
+        String type = var.getVarType();//'tipo'
+        int objLength = 0;
+        if (type.equals("struct")){//si lo que guarda es un array de struct
+            StructVar nvar = new StructVar(var.getVarId(),((StructVar)var).getStructID());
+            objLength = nvar.getTotalSize();//tomamos todo el tamanio de esa onda
+            type+= ((StructVar) var).getStructID().getStructID();
+            if (nvar.isArray()) type += "array";
+        }else{
+            Variable nvar = new Variable(var.getVarId(),var.getVarType(), var.getSize());
+            objLength = nvar.getTotalSize();
+            if (nvar.isArray()) type += "array";
+        }
+        
+        _interCode.setIntLiteral(""+objLength);//tomamos el tamanio de cada objeto
+        _interCode.buildOperation("*");//multiplicamos ambas partes
+        
+        _interCode.setLastAsLeft();//tomamos el resultado y lo colocamos a la izquierda
+        _interCode.setIntLiteral(""+offset);//agregamos el offset de esta variable
+        _interCode.setLastAsRight();
+        _interCode.buildOperation("+");
+
+        Object[] returnO = {type,""};
+        return returnO;
+    }
+    
+    public Object visitLocationExplocationContext(LocationExplocationContext ctx, StructVar varCheck){
+        Variable var = varCheck.getStructID().hasVariable(ctx.ID().getText());
+        if (var == null){
+            int line = ctx.getStart().getLine();
+            int column = ctx.getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable '"+ctx.ID().getText()+"' no definida @line: "+line+" @column: "+column));
+            return null;
+            
+        }
+        int offset = varCheck.getStructID().offsetOfVar(ctx.ID().getText());
+        
+        if (!var.isArray()){//si no es array
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable tipo array no tiene location definido @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        Object obj = visit(ctx.expression());//visitamos expression
+        if (obj == null){//error en expression
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en expression @line: "+line+" @column: "+column));
+            return null;
+        }
+
+        //si no existe error
+        Object[] type_codeE = (Object[])obj;
+        String typeE = (String) type_codeE[0];//guarda el tipo del expression
+        String codeE = (String) type_codeE[1];//guarda el codigo intermedio del expression
+
+        if (!typeE.equals("int")){
+            int line = ctx.expression().getStart().getLine();
+            int column = ctx.expression().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en expression no de tipo int @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        //si todo esta bien, expression tiene el offset en el ultimo
+        _interCode.setLastAsLeft();//tomamos el tamanio y lo ponemos de izquierdo
+        
+        String type = var.getVarType();//'tipo'
+        if (!type.equals("struct")){//no es struct y se llama a location
+            int line = ctx.location().getStart().getLine();
+            int column = ctx.location().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error variable no definida como 'struct' @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        int objLength = 0;
+        StructVar nvar = new StructVar(var.getVarId(),((StructVar)var).getStructID());
+        objLength = nvar.getTotalSize();//tomamos todo el tamanio de esa onda
+        type+= ((StructVar) var).getStructID().getStructID();
+        
+        
+        
+        _interCode.setIntLiteral(""+objLength);//tomamos el tamanio de cada objeto
+        _interCode.setLastAsRight();
+        _interCode.buildOperation("*");//multiplicamos ambas partes
+        
+        _interCode.setLastAsLeft();//tomamos el resultado y lo colocamos a la izquierda
+        _interCode.setIntLiteral(""+offset);//agregamos el offset de esta variable
+        _interCode.setLastAsRight();
+        _interCode.buildOperation("+");
+        _interCode.pushTempActual();
+        
+        Object obj1 = visitLocationContinuos(ctx.location(),nvar);
+        _interCode.setLastAsLeft();//colocamos el offset a la izquierda
+        _interCode.popTempActual();
+        _interCode.setLastAsRight();
+        _interCode.buildOperation("+");
+        
+        return obj1;
+    }
+    
+    public Object visitLocationContinuos(LocationContext ctx, StructVar varCheck){
+        if (ctx instanceof LocationIDContext){
+            return visitLocationIDContext((LocationIDContext) ctx, varCheck);
+        }
+        
+        if (ctx instanceof LocationIDlocationContext){
+            return visitLocationIDlocation((LocationIDlocationContext) ctx, varCheck);
+        }
+        
+        if (ctx instanceof LocationExpContext){
+            return visitLocationExpContext((LocationExpContext) ctx,  varCheck);
+        }
+        
+        if (ctx instanceof LocationExplocationContext ){
+            return visitLocationExplocationContext((LocationExplocationContext) ctx, varCheck); 
+        }
+        return null;
     }
     
     public Object visitExpOPExp (ExpOPExpContext ctx){
@@ -823,6 +1111,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             return null;
         }
         
+        _interCode.setLastAsLeft();//ponemos lo anterior del lado izquierdo de la operacion
+        
         Object[] type_codeE1 = (Object[])objE1;
         String typeE1 = (String) type_codeE1[0];//guarda el tipo del expression
         String codeE1 = (String) type_codeE1[1];//guarda el codigo intermedio del expression
@@ -834,6 +1124,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             _errors.add(new Exception("Error en definicion de expression @line: "+line+" @column: "+column));
             return null;
         }
+        
+        _interCode.setLastAsRight();
         
         Object[] type_codeE2 = (Object[])objE2;
         String typeE2 = (String) type_codeE2[0];//guarda el tipo del expression
@@ -907,7 +1199,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                 break; 
         }
         
-        
+        _interCode.buildOperation(op);
         
         Object[] returnO = {"boolean",""};
         return returnO; 
@@ -934,6 +1226,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             return null;
         }
         
+        _interCode.toMinus();
+        
         Object[] returnO = {"int",""};
         return returnO;
     }
@@ -958,6 +1252,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             _errors.add(new Exception("Error en tipo: '"+type+"' no aplicable '!' @line: "+line+" @column: "+column));
             return null;
         }
+        
+        
         
         Object[] returnO = {"boolean",""};
         return returnO;
@@ -992,6 +1288,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             String type = (String) type_code[0];//guarda el tipo del expression
             String code = (String) type_code[1];//guarda el codigo intermedio del expression
             params.add(type);
+            _interCode.pushParam();
         }
         
         if (params.size() != mt.getParams().size()){
@@ -1021,12 +1318,15 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         
         
         
+        _interCode.callMethod(id);
+        
         Object[] returnO = {mt.getMetType(),""};
         return returnO;
     }
     
     public Object visitPlusOrMinus (PlusOrMinusContext ctx){
-        if (ctx.multOrDiv() != null) return visitChildren(ctx);//retornamos mulOrDiv
+        
+        if (ctx.getChildCount()<=1) return visitChildren(ctx);//retornamos mulOrDiv
         
         Object obj1 = visit(ctx.plusOrMinus());
         if (obj1 == null){
@@ -1036,6 +1336,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             return null;
         }
         
+        _interCode.setLastAsLeft();
+        
         Object obj2 = visit(ctx.multOrDiv());
         if (obj2 == null){
             int line = ctx.multOrDiv().getStart().getLine();
@@ -1043,6 +1345,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             _errors.add(new Exception("Error en definicion de multOrDiv @line: "+line+" @column: "+column));
             return null;
         }
+        
+        _interCode.setLastAsRight();
         
         Object[] type_code1 = (Object[])obj1;
         String type1 = (String) type_code1[0];//guarda el tipo del expression
@@ -1067,11 +1371,16 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         }
         
         
+        
+        _interCode.buildOperation(ctx.getChild(1).getText());
+        
+        
         Object[] returnO = {"int",""};
         return returnO;
     }
     
     public Object visitMultOrDiv (MultOrDivContext ctx){
+        
         if (ctx.getChildCount() <=1) return visitChildren(ctx);
         
         Object obj1 = visit(ctx.multOrDiv());
@@ -1082,6 +1391,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             return null;
         }
         
+        _interCode.setLastAsLeft();
+        
         Object obj2 = visit(ctx.pow());
         if (obj2 == null){
             int line = ctx.pow().getStart().getLine();
@@ -1089,6 +1400,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             _errors.add(new Exception("Error en definicion de pow @line: "+line+" @column: "+column));
             return null;
         }
+        
+        _interCode.setLastAsRight();
         
         Object[] type_code1 = (Object[])obj1;
         String type1 = (String) type_code1[0];//guarda el tipo del expression
@@ -1113,6 +1426,9 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         }
         
         
+        
+        _interCode.buildOperation(ctx.getChild(1).getText());
+        
         Object[] returnO = {"int",""};
         return returnO;
     }
@@ -1130,6 +1446,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                 _errors.add(new Exception("Error en definicion de unaryMinus @line: "+line+" @column: "+column));
                 return null;
             }
+            _interCode.toMinus();
         }else{
             Object obj = visit(ctx.atom());
             if (obj == null){
@@ -1153,16 +1470,19 @@ public class MyVisitor extends decafBaseVisitor<Object> {
     }
     
     public Object visitBool_literal (Bool_literalContext ctx){
+        _interCode.setBoolLiteral(ctx.getText());
         Object[] returnO = {"boolean",ctx.getText()};
         return returnO;
     }
     
     public Object visitChar_literal (Char_literalContext ctx){
+        _interCode.setCharLiteral(ctx.getText());
         Object[] returnO = {"char",ctx.getText()};
         return returnO;
     }
     
     public Object visitInt_literal (Int_literalContext ctx){
+        _interCode.setIntLiteral(ctx.getText());
         Object[] returnO = {"int",ctx.getText()};
         return returnO;
     }

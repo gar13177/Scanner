@@ -41,6 +41,17 @@ public class StructDef extends LinkedHashSet<Variable>{
         }
         return null;
     }
+    
+    public int offsetOfVar(String ID){
+        int offset = 0;
+        for (Variable v: this){
+            if (v.getVarId().equals(ID)){
+                return offset;
+            }
+            offset += v.getTotalSize();
+        }
+        return offset;
+    }
 
     /**
      * @return the _size

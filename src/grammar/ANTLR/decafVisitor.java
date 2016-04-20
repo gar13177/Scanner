@@ -31,6 +31,13 @@ public interface decafVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitMethodDeclaration(@NotNull decafParser.MethodDeclarationContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code locationExp}
+	 * labeled alternative in {@link decafParser#location}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLocationExp(@NotNull decafParser.LocationExpContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code statementReturn}
 	 * labeled alternative in {@link decafParser#statement}.
 	 * @param ctx the parse tree
@@ -201,6 +208,20 @@ public interface decafVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitVarDeclaration(@NotNull decafParser.VarDeclarationContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code locationExplocation}
+	 * labeled alternative in {@link decafParser#location}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLocationExplocation(@NotNull decafParser.LocationExplocationContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code locationIDlocation}
+	 * labeled alternative in {@link decafParser#location}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLocationIDlocation(@NotNull decafParser.LocationIDlocationContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code expLocation}
 	 * labeled alternative in {@link decafParser#expression}.
 	 * @param ctx the parse tree
@@ -219,6 +240,13 @@ public interface decafVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitCond_op(@NotNull decafParser.Cond_opContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code locationID}
+	 * labeled alternative in {@link decafParser#location}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLocationID(@NotNull decafParser.LocationIDContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code expCalc}
 	 * labeled alternative in {@link decafParser#expression}.
@@ -239,12 +267,6 @@ public interface decafVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitUnaryMinus(@NotNull decafParser.UnaryMinusContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link decafParser#location}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitLocation(@NotNull decafParser.LocationContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link decafParser#atom}.
 	 * @param ctx the parse tree
