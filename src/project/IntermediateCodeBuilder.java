@@ -83,17 +83,20 @@ public class IntermediateCodeBuilder {
     }
     
     public void setGlobalPointer(){
-        String str = temp_var+""+temp_var_number+" = gp["+last_used_temp+"]";
+        /*String str = temp_var+""+temp_var_number+" = gp["+last_used_temp+"]";
         to_build_code += str+"\n";//cargamos la operacion al codigo
         last_used_temp = temp_var+""+temp_var_number;//cargamos la ultima variable usada
-        temp_var_number++;
+        temp_var_number++;*/
+        last_used_temp = "gp["+last_used_temp+"]";
     }
     
     public void setLocalPointer(){
-        String str = temp_var+""+temp_var_number+" = lp["+last_used_temp+"]";
+        /*String str = temp_var+""+temp_var_number+" = lp["+last_used_temp+"]";
         to_build_code += str+"\n";//cargamos la operacion al codigo
         last_used_temp = temp_var+""+temp_var_number;//cargamos la ultima variable usada
-        temp_var_number++;
+        temp_var_number++;*/
+        
+        last_used_temp = "lp["+last_used_temp+"]";
     }
     
     
@@ -113,7 +116,7 @@ public class IntermediateCodeBuilder {
     
     public void buildMethod(){
         to_build_code += method_name+"_end_p:\n";
-        to_build_code += method_name+"_end\n";
+        to_build_code += method_name+"_end\n\n\n";
         code += to_build_code;
     }
     
@@ -156,7 +159,7 @@ public class IntermediateCodeBuilder {
             index += if_count;
         }
         
-        to_build_code += if_prelude+if_str+":\n";
+        to_build_code += if_prelude+" "+if_str+":\n";
         if_count_index.push(index);
         if_count ++;
         

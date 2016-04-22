@@ -45,6 +45,12 @@ public interface decafVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementReturn(@NotNull decafParser.StatementReturnContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link decafParser#assignOp}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAssignOp(@NotNull decafParser.AssignOpContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code statementBlock}
 	 * labeled alternative in {@link decafParser#statement}.
 	 * @param ctx the parse tree
@@ -63,6 +69,12 @@ public interface decafVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitBool_literal(@NotNull decafParser.Bool_literalContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link decafParser#atom2}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAtom2(@NotNull decafParser.Atom2Context ctx);
 	/**
 	 * Visit a parse tree produced by {@link decafParser#rel_op}.
 	 * @param ctx the parse tree
@@ -131,32 +143,17 @@ public interface decafVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitBlock(@NotNull decafParser.BlockContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code expMinus}
-	 * labeled alternative in {@link decafParser#expression}.
+	 * Visit a parse tree produced by {@link decafParser#condOp}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitExpMinus(@NotNull decafParser.ExpMinusContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code expNot}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExpNot(@NotNull decafParser.ExpNotContext ctx);
+	T visitCondOp(@NotNull decafParser.CondOpContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link decafParser#char_literal}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitChar_literal(@NotNull decafParser.Char_literalContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code expOPExp}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExpOPExp(@NotNull decafParser.ExpOPExpContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link decafParser#parameterType}.
 	 * @param ctx the parse tree
@@ -177,12 +174,6 @@ public interface decafVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitOp(@NotNull decafParser.OpContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link decafParser#calc_op}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitCalc_op(@NotNull decafParser.Calc_opContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link decafParser#plusOrMinus}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -196,6 +187,12 @@ public interface decafVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExpMethodCall(@NotNull decafParser.ExpMethodCallContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link decafParser#unaryMinus2}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitUnaryMinus2(@NotNull decafParser.UnaryMinus2Context ctx);
+	/**
 	 * Visit a parse tree produced by {@link decafParser#declaration}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -207,6 +204,12 @@ public interface decafVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitVarDeclaration(@NotNull decafParser.VarDeclarationContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link decafParser#pow2}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPow2(@NotNull decafParser.Pow2Context ctx);
 	/**
 	 * Visit a parse tree produced by the {@code locationExplocation}
 	 * labeled alternative in {@link decafParser#location}.
@@ -267,6 +270,13 @@ public interface decafVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitUnaryMinus(@NotNull decafParser.UnaryMinusContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code expCond}
+	 * labeled alternative in {@link decafParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExpCond(@NotNull decafParser.ExpCondContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link decafParser#atom}.
 	 * @param ctx the parse tree

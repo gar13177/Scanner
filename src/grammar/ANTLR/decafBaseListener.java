@@ -77,6 +77,18 @@ public class decafBaseListener implements decafListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterAssignOp(@NotNull decafParser.AssignOpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAssignOp(@NotNull decafParser.AssignOpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterStatementBlock(@NotNull decafParser.StatementBlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -108,6 +120,18 @@ public class decafBaseListener implements decafListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitBool_literal(@NotNull decafParser.Bool_literalContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterAtom2(@NotNull decafParser.Atom2Context ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAtom2(@NotNull decafParser.Atom2Context ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -245,25 +269,13 @@ public class decafBaseListener implements decafListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterExpMinus(@NotNull decafParser.ExpMinusContext ctx) { }
+	@Override public void enterCondOp(@NotNull decafParser.CondOpContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitExpMinus(@NotNull decafParser.ExpMinusContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterExpNot(@NotNull decafParser.ExpNotContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExpNot(@NotNull decafParser.ExpNotContext ctx) { }
+	@Override public void exitCondOp(@NotNull decafParser.CondOpContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -276,18 +288,6 @@ public class decafBaseListener implements decafListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitChar_literal(@NotNull decafParser.Char_literalContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterExpOPExp(@NotNull decafParser.ExpOPExpContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExpOPExp(@NotNull decafParser.ExpOPExpContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -329,18 +329,6 @@ public class decafBaseListener implements decafListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterCalc_op(@NotNull decafParser.Calc_opContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitCalc_op(@NotNull decafParser.Calc_opContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterPlusOrMinus(@NotNull decafParser.PlusOrMinusContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -365,6 +353,18 @@ public class decafBaseListener implements decafListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterUnaryMinus2(@NotNull decafParser.UnaryMinus2Context ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitUnaryMinus2(@NotNull decafParser.UnaryMinus2Context ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterDeclaration(@NotNull decafParser.DeclarationContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -384,6 +384,18 @@ public class decafBaseListener implements decafListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitVarDeclaration(@NotNull decafParser.VarDeclarationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterPow2(@NotNull decafParser.Pow2Context ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitPow2(@NotNull decafParser.Pow2Context ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -492,6 +504,18 @@ public class decafBaseListener implements decafListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitUnaryMinus(@NotNull decafParser.UnaryMinusContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExpCond(@NotNull decafParser.ExpCondContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExpCond(@NotNull decafParser.ExpCondContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

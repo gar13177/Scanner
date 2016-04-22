@@ -30,7 +30,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         _scopes = new Stack();
         _scopes.push(new Scope());
         _errors = new Stack();
-        _interCode = new IntermediateCodeBuilder();
+        setInterCode(new IntermediateCodeBuilder());
     }
     
     public Object visitProgram(ProgramContext ctx){
@@ -46,7 +46,20 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         }
         
         if (_errors.empty()){
-            System.out.println(_interCode);
+            //System.out.println(getInterCode());
+            Method mt = _scopes.peek().hasMethodDef("main");
+            if (mt == null){
+                _errors.add(new Exception("main no definido"));
+            }
+            
+            if (!mt.getMetType().equals("void")){
+                _errors.add(new Exception("main no definido como void"));
+            }
+            
+            if (mt.getParams().size()>0){
+                _errors.add(new Exception("main espera parametros, no deberia"));
+            }
+            
             return null;
         }
         //else: crear codigo intermedio
@@ -56,7 +69,13 @@ public class MyVisitor extends decafBaseVisitor<Object> {
     public Object visitDeclaration(DeclarationContext ctx){
         
         if (ctx.methodDeclaration() != null){
-            visitChildren(ctx);//
+            Object obj = visitChildren(ctx);//
+            if (obj == null){
+                int line = ctx.getStart().getLine();
+                int column = ctx.getStart().getCharPositionInLine();
+                _errors.add(new Exception("Error en methodDeclaration @line: "+line+" @column: "+column));
+                return null;
+            }
             return "void";
         }
         
@@ -256,7 +275,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         String type = ctx.methodType().getText();
         String id = ctx.ID().toString();
         
-        _interCode.newMethod(id);
+        getInterCode().newMethod(id);
         
         LinkedHashSet<Variable> parameters = new LinkedHashSet();
         boolean errores = false;
@@ -330,7 +349,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         
         if (errores) return null;
         
-        _interCode.buildMethod();
+        getInterCode().buildMethod();
        
         return "void";
     }
@@ -457,7 +476,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             return null;
         }
         
-        _interCode.newIf();
+        getInterCode().newIf();
         
         int i = 0;
         for (BlockContext bc: ctx.block()){
@@ -472,11 +491,11 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             Object[] type_codeB = (Object[])objB;
             String typeB = (String) type_code[0];//guarda el tipo del statement
             String codeB = (String) type_code[1];//guarda el codigo intermedio del statement
-            if (i==0) _interCode.newElse();
+            if (i==0) getInterCode().newElse();
             i++;
         }
         
-        _interCode.endIf();
+        getInterCode().endIf();
         
         Object[] returnO = {"void",""};
         return returnO ;
@@ -484,7 +503,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
     
     public Object visitStatementWhile (StatementWhileContext ctx){
         
-        _interCode.newWhile();
+        getInterCode().newWhile();
         
         Object obj = visit(ctx.expression());//visitamos expression
         if (obj == null){
@@ -494,7 +513,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             return null;
         }
         
-        _interCode.meanWhile();
+        getInterCode().meanWhile();
         
         Object[] type_code = (Object[])obj;
         String type = (String) type_code[0];//guarda el tipo del statement
@@ -519,7 +538,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         String typeB = (String) type_code[0];//guarda el tipo del statement
         String codeB = (String) type_code[1];//guarda el codigo intermedio del statement
         
-        _interCode.endWhile();
+        getInterCode().endWhile();
 
         Object[] returnO = {"void",""};
         return returnO;
@@ -537,7 +556,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                     return null;
                 }else{
                     mt.setReturn(true);
-                    _interCode.buildReturnVoid();
+                    getInterCode().buildReturnVoid();
                     Object[] returnO = {"void",""};
                     return returnO;
                 }
@@ -566,7 +585,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                 return null;
             }else{
                 mt.setReturn(true);
-                _interCode.buildReturn();
+                getInterCode().buildReturn();
                 Object[] returnO = {"void",""};
                 return returnO;
             }
@@ -589,7 +608,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         String typeL = (String) type_codeL[0];//guarda el tipo del statement
         String codeL = (String) type_codeL[1];//guarda el codigo intermedio del statement
         //location 
-        _interCode.pushTempActual();
+        getInterCode().pushTempActual();
         
         Object objE = visit(ctx.expression());
         if (objE == null){
@@ -610,10 +629,10 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             return null;
         }
         //tenemos expression
-        _interCode.setLastAsLeft();
-        _interCode.popTempActual();
-        _interCode.setLastAsEq();
-        _interCode.buildEqual();
+        getInterCode().setLastAsLeft();
+        getInterCode().popTempActual();
+        getInterCode().setLastAsEq();
+        getInterCode().buildEqual();
         
         Object[] returnO = {"void",""};
         return returnO; 
@@ -638,12 +657,12 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                 return null;
             }
             offset = _scopes.get(0).offsetOfVar(ctx.ID().getText());
-            _interCode.setIntLiteral(""+offset);
-            _interCode.setGlobalPointer();
+            getInterCode().setIntLiteral(""+offset);
+            getInterCode().setGlobalPointer();
         }else{
             offset = _scopes.peek().offsetOfVar(ctx.ID().getText());//extraigo offset desde inicio
-            _interCode.setIntLiteral(""+offset);
-            _interCode.setLocalPointer();
+            getInterCode().setIntLiteral(""+offset);
+            getInterCode().setLocalPointer();
             
         }
         String type = var.getVarType();//'tipo'
@@ -706,7 +725,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             return null;
         }
 
-        _interCode.setLastAsLeft();//tenemos las posiciones en la izquierda gracias a expression
+        getInterCode().setLastAsLeft();//tenemos las posiciones en la izquierda gracias a expression
         //_interCode.setIntLiteral(""+offset);
 
         Variable var1 = new Variable();
@@ -716,17 +735,17 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             var1 = new Variable(var.getVarId(),var.getVarType(), var.getSize());
         }
         
-        _interCode.setIntLiteral(var1.getTotalSize()+"");//tomamos el tamanio de dicha variable
-        _interCode.setLastAsRight();
-        _interCode.buildOperation("*");//multiplicamos para llegar al offset
-        _interCode.setLastAsLeft();
-        _interCode.setIntLiteral(""+offset);
-        _interCode.setLastAsRight();
-        _interCode.buildOperation("+");
+        getInterCode().setIntLiteral(var1.getTotalSize()+"");//tomamos el tamanio de dicha variable
+        getInterCode().setLastAsRight();
+        getInterCode().buildOperation("*");//multiplicamos para llegar al offset
+        getInterCode().setLastAsLeft();
+        getInterCode().setIntLiteral(""+offset);
+        getInterCode().setLastAsRight();
+        getInterCode().buildOperation("+");
         if (global){
-            _interCode.setGlobalPointer();
+            getInterCode().setGlobalPointer();
         }else{
-            _interCode.setLocalPointer();
+            getInterCode().setLocalPointer();
         }
 
         String type = var1.getVarType();//'tipo'
@@ -777,15 +796,15 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         
         Object obj = visitLocationContinuos(ctx.location(), (StructVar)var);
         //retorna el valor del offset
-        _interCode.setLastAsLeft();
+        getInterCode().setLastAsLeft();
         
-        _interCode.setIntLiteral(""+offset);
-        _interCode.setLastAsRight();
-        _interCode.buildOperation("+");
+        getInterCode().setIntLiteral(""+offset);
+        getInterCode().setLastAsRight();
+        getInterCode().buildOperation("+");
         if (global){
-            _interCode.setGlobalPointer();
+            getInterCode().setGlobalPointer();
         }else{
-            _interCode.setLocalPointer();
+            getInterCode().setLocalPointer();
         }
         
         return obj;
@@ -839,7 +858,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         }
         
         //si todo esta bien, expression tiene el offset en el ultimo
-        _interCode.setLastAsLeft();//tomamos el tamanio y lo ponemos de izquierdo
+        getInterCode().setLastAsLeft();//tomamos el tamanio y lo ponemos de izquierdo
         
         String type = var.getVarType();//'tipo'
         if (!type.equals("struct")){//no es struct y se llama a location
@@ -856,25 +875,25 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         
         
         
-        _interCode.setIntLiteral(""+objLength);//tomamos el tamanio de cada objeto
-        _interCode.setLastAsRight();
-        _interCode.buildOperation("*");//multiplicamos ambas partes
+        getInterCode().setIntLiteral(""+objLength);//tomamos el tamanio de cada objeto
+        getInterCode().setLastAsRight();
+        getInterCode().buildOperation("*");//multiplicamos ambas partes
         
-        _interCode.setLastAsLeft();//tomamos el resultado y lo colocamos a la izquierda
-        _interCode.setIntLiteral(""+offset);//agregamos el offset de esta variable
-        _interCode.setLastAsRight();
-        _interCode.buildOperation("+");
-        _interCode.pushTempActual();
+        getInterCode().setLastAsLeft();//tomamos el resultado y lo colocamos a la izquierda
+        getInterCode().setIntLiteral(""+offset);//agregamos el offset de esta variable
+        getInterCode().setLastAsRight();
+        getInterCode().buildOperation("+");
+        getInterCode().pushTempActual();
         
         Object obj1 = visitLocationContinuos(ctx.location(),nvar);
-        _interCode.setLastAsLeft();//colocamos el offset a la izquierda
-        _interCode.popTempActual();
-        _interCode.setLastAsRight();
-        _interCode.buildOperation("+");
+        getInterCode().setLastAsLeft();//colocamos el offset a la izquierda
+        getInterCode().popTempActual();
+        getInterCode().setLastAsRight();
+        getInterCode().buildOperation("+");
         if (global){
-            _interCode.setGlobalPointer();
+            getInterCode().setGlobalPointer();
         }else{
-            _interCode.setLocalPointer();
+            getInterCode().setLocalPointer();
         }
         
         return obj1;
@@ -891,7 +910,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         }
         int offset = varCheck.getStructID().offsetOfVar(ctx.ID().getText());
         
-        _interCode.setIntLiteral(""+offset);
+        getInterCode().setIntLiteral(""+offset);
         
         String type = var.getVarType();//'tipo'
         if (type.equals("struct")){
@@ -930,13 +949,13 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         
         Object obj = visitLocationContinuos(ctx.location(), (StructVar)var);
         //retorna el valor del offset
-        _interCode.setLastAsLeft();
+        getInterCode().setLastAsLeft();
         
         int offset = varCheck.getStructID().offsetOfVar(ctx.ID().getText());
         
-        _interCode.setIntLiteral(""+offset);
-        _interCode.setLastAsRight();
-        _interCode.buildOperation("+");
+        getInterCode().setIntLiteral(""+offset);
+        getInterCode().setLastAsRight();
+        getInterCode().buildOperation("+");
         
         return obj;
     }
@@ -980,7 +999,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         }
         
         //si todo esta bien, expression tiene el offset en el ultimo
-        _interCode.setLastAsLeft();//tomamos el tamanio y lo ponemos de izquierdo
+        getInterCode().setLastAsLeft();//tomamos el tamanio y lo ponemos de izquierdo
         
         String type = var.getVarType();//'tipo'
         int objLength = 0;
@@ -995,13 +1014,13 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             if (nvar.isArray()) type += "array";
         }
         
-        _interCode.setIntLiteral(""+objLength);//tomamos el tamanio de cada objeto
-        _interCode.buildOperation("*");//multiplicamos ambas partes
+        getInterCode().setIntLiteral(""+objLength);//tomamos el tamanio de cada objeto
+        getInterCode().buildOperation("*");//multiplicamos ambas partes
         
-        _interCode.setLastAsLeft();//tomamos el resultado y lo colocamos a la izquierda
-        _interCode.setIntLiteral(""+offset);//agregamos el offset de esta variable
-        _interCode.setLastAsRight();
-        _interCode.buildOperation("+");
+        getInterCode().setLastAsLeft();//tomamos el resultado y lo colocamos a la izquierda
+        getInterCode().setIntLiteral(""+offset);//agregamos el offset de esta variable
+        getInterCode().setLastAsRight();
+        getInterCode().buildOperation("+");
 
         Object[] returnO = {type,""};
         return returnO;
@@ -1046,7 +1065,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         }
         
         //si todo esta bien, expression tiene el offset en el ultimo
-        _interCode.setLastAsLeft();//tomamos el tamanio y lo ponemos de izquierdo
+        getInterCode().setLastAsLeft();//tomamos el tamanio y lo ponemos de izquierdo
         
         String type = var.getVarType();//'tipo'
         if (!type.equals("struct")){//no es struct y se llama a location
@@ -1063,21 +1082,21 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         
         
         
-        _interCode.setIntLiteral(""+objLength);//tomamos el tamanio de cada objeto
-        _interCode.setLastAsRight();
-        _interCode.buildOperation("*");//multiplicamos ambas partes
+        getInterCode().setIntLiteral(""+objLength);//tomamos el tamanio de cada objeto
+        getInterCode().setLastAsRight();
+        getInterCode().buildOperation("*");//multiplicamos ambas partes
         
-        _interCode.setLastAsLeft();//tomamos el resultado y lo colocamos a la izquierda
-        _interCode.setIntLiteral(""+offset);//agregamos el offset de esta variable
-        _interCode.setLastAsRight();
-        _interCode.buildOperation("+");
-        _interCode.pushTempActual();
+        getInterCode().setLastAsLeft();//tomamos el resultado y lo colocamos a la izquierda
+        getInterCode().setIntLiteral(""+offset);//agregamos el offset de esta variable
+        getInterCode().setLastAsRight();
+        getInterCode().buildOperation("+");
+        getInterCode().pushTempActual();
         
         Object obj1 = visitLocationContinuos(ctx.location(),nvar);
-        _interCode.setLastAsLeft();//colocamos el offset a la izquierda
-        _interCode.popTempActual();
-        _interCode.setLastAsRight();
-        _interCode.buildOperation("+");
+        getInterCode().setLastAsLeft();//colocamos el offset a la izquierda
+        getInterCode().popTempActual();
+        getInterCode().setLastAsRight();
+        getInterCode().buildOperation("+");
         
         return obj1;
     }
@@ -1101,35 +1120,156 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         return null;
     }
     
-    public Object visitExpOPExp (ExpOPExpContext ctx){
+    public Object visitMethodCall (MethodCallContext ctx){
+        String id = ctx.ID().getText();//nombre
+        Method mt = _scopes.get(0).hasMethodDef(id);
         
-        Object objE1 = visit(ctx.expression(0));
-        if (objE1 == null){
-            int line = ctx.expression(0).getStart().getLine();
-            int column = ctx.expression(0).getStart().getCharPositionInLine();
-            _errors.add(new Exception("Error en definicion de expression @line: "+line+" @column: "+column));
+        if (mt == null){
+            int line = ctx.getStart().getLine();
+            int column = ctx.getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error metodo '"+id+"' no definido @line: "+line+" @column: "+column));
             return null;
         }
         
-        _interCode.setLastAsLeft();//ponemos lo anterior del lado izquierdo de la operacion
+        ArrayList<String> params = new ArrayList();
+        for (ArgContext arg: ctx.arg()){
+            Object obj = visit(arg);
+            if (obj == null){
+                int line = arg.getStart().getLine();
+                int column = arg.getStart().getCharPositionInLine();
+                _errors.add(new Exception("Error en definicion de parametro @line: "+line+" @column: "+column));
+                return null;
+            }
+            
+            Object[] type_code = (Object[])obj;
+            String type = (String) type_code[0];//guarda el tipo del expression
+            String code = (String) type_code[1];//guarda el codigo intermedio del expression
+            params.add(type);
+            getInterCode().pushParam();
+        }
         
-        Object[] type_codeE1 = (Object[])objE1;
-        String typeE1 = (String) type_codeE1[0];//guarda el tipo del expression
-        String codeE1 = (String) type_codeE1[1];//guarda el codigo intermedio del expression
-        
-        Object objE2 = visit(ctx.expression(1));
-        if (objE2 == null){
-            int line = ctx.expression(1).getStart().getLine();
-            int column = ctx.expression(1).getStart().getCharPositionInLine();
-            _errors.add(new Exception("Error en definicion de expression @line: "+line+" @column: "+column));
+        if (params.size() != mt.getParams().size()){
+            int line = ctx.getStart().getLine();
+            int column = ctx.getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de parametros, se esperan "+mt.getParams().size()+"' parametros @line: "+line+" @column: "+column));
             return null;
         }
         
-        _interCode.setLastAsRight();
+        int i = 0;
+        for (Variable v: mt.getParams()){
+            String typeParam = params.get(i);
+            String typeVar = v.getVarType();
+            if (typeVar.equals("struct")){
+                typeVar += ((StructVar)v).getStructID().getStructID();
+            }
+            if (v.isArray()) typeVar += "array";
+            
+            if (!typeParam.equals(typeVar)){//si no son iguales
+                int line = ctx.getStart().getLine();
+                int column = ctx.getStart().getCharPositionInLine();
+                _errors.add(new Exception("Error en definicion de parametros, se esperaba "+typeVar+"', se obtuvo '"+typeParam+"' @line: "+line+" @column: "+column));
+                return null;
+            }
+            i++;
+        }
         
-        Object[] type_codeE2 = (Object[])objE2;
-        String typeE2 = (String) type_codeE2[0];//guarda el tipo del expression
-        String codeE2 = (String) type_codeE2[1];//guarda el codigo intermedio del expression
+        
+        
+        getInterCode().callMethod(id);
+        
+        Object[] returnO = {mt.getMetType(),""};
+        return returnO;
+    }
+    
+    public Object visitCondOp (CondOpContext ctx){
+        if (ctx.getChildCount()<=1) return visitChildren(ctx);//retornamos mulOrDiv
+        
+        Object obj1 = visit(ctx.condOp());
+        if (obj1 == null){
+            int line = ctx.condOp().getStart().getLine();
+            int column = ctx.condOp().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de condOp @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        getInterCode().pushTempActual();//guardamos el actual
+        //getInterCode().setLastAsLeft();
+        
+        Object obj2 = visit(ctx.assignOp());
+        if (obj2 == null){
+            int line = ctx.assignOp().getStart().getLine();
+            int column = ctx.assignOp().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de assignOp @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        getInterCode().setLastAsRight();
+        getInterCode().popTempActual();
+        getInterCode().setLastAsLeft();
+        
+        Object[] type_code1 = (Object[])obj1;
+        String type1 = (String) type_code1[0];//guarda el tipo del expression
+        String code1 = (String) type_code1[1];//guarda el codigo intermedio del expression
+        
+        Object[] type_code2 = (Object[])obj2;
+        String type2 = (String) type_code2[0];//guarda el tipo del expression
+        String code2 = (String) type_code2[1];//guarda el codigo intermedio del expression
+        
+        if (!type1.equals("boolean")){
+            int line = ctx.condOp().getStart().getLine();
+            int column = ctx.condOp().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de condOp no es de tipo boolean @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        if (!type2.equals("boolean")){
+            int line = ctx.assignOp().getStart().getLine();
+            int column = ctx.assignOp().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de assignOp no es de tipo boolean @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        
+        
+        getInterCode().buildOperation(ctx.getChild(1).getText());
+        
+        
+        Object[] returnO = {"boolean",""};
+        return returnO;
+    }
+    
+    public Object visitAssignOp (AssignOpContext ctx){
+        if (ctx.getChildCount() <=1) return visitChildren(ctx);
+        
+        Object obj1 = visit(ctx.assignOp());
+        if (obj1 == null){
+            int line = ctx.assignOp().getStart().getLine();
+            int column = ctx.assignOp().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de assignOp @line: "+line+" @column: "+column));
+            return null;
+        }
+        getInterCode().pushTempActual();//metemos el actual a la pila
+        //getInterCode().setLastAsLeft();
+        
+        Object obj2 = visit(ctx.pow2());
+        if (obj2 == null){
+            int line = ctx.pow2().getStart().getLine();
+            int column = ctx.pow2().getStart().getCharPositionInLine();
+            _errors.add(new Exception("Error en definicion de pow2 @line: "+line+" @column: "+column));
+            return null;
+        }
+        
+        getInterCode().setLastAsRight();//ponemos el ultimo de lado derecho
+        getInterCode().popTempActual();//sacamos el del lado izquierdo
+        getInterCode().setLastAsLeft();//lo ponemos como lado izquierdo
+        
+        Object[] type_code1 = (Object[])obj1;
+        String typeE1 = (String) type_code1[0];//guarda el tipo del expression
+        String code1 = (String) type_code1[1];//guarda el codigo intermedio del expression
+        
+        Object[] type_code2 = (Object[])obj2;
+        String typeE2 = (String) type_code2[0];//guarda el tipo del expression
+        String code2 = (String) type_code2[1];//guarda el codigo intermedio del expression
         
         String op = (String)visit(ctx.op());//op
         
@@ -1181,147 +1321,35 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                 break;
             case "!=":
                 break;
-            case "&&":
-                if (!typeE1.equals("boolean")){
-                    int line = ctx.op().getStart().getLine();
-                    int column = ctx.op().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error en tipo: '"+typeE1+"' no comparable '&&' @line: "+line+" @column: "+column));
-                    return null;
-                }
-                break;
-            case "||":
-                if (!typeE1.equals("boolean")){
-                    int line = ctx.op().getStart().getLine();
-                    int column = ctx.op().getStart().getCharPositionInLine();
-                    _errors.add(new Exception("Error en tipo: '"+typeE1+"' no comparable '||' @line: "+line+" @column: "+column));
-                    return null;
-                }
-                break; 
+            
         }
         
-        _interCode.buildOperation(op);
+        getInterCode().buildOperation(op);
         
         Object[] returnO = {"boolean",""};
         return returnO; 
     }
     
-    public Object visitExpMinus (ExpMinusContext ctx){
-        Object obj = visit(ctx.expression());
-        
-        if (obj == null){
-            int line = ctx.expression().getStart().getLine();
-            int column = ctx.expression().getStart().getCharPositionInLine();
-            _errors.add(new Exception("Error en definicion de expression @line: "+line+" @column: "+column));
-            return null;
-        }
-        
-        Object[] type_code = (Object[])obj;
-        String type = (String) type_code[0];//guarda el tipo del expression
-        String code = (String) type_code[1];//guarda el codigo intermedio del expression
-        
-        if (!type.equals("int")){
-            int line = ctx.expression().getStart().getLine();
-            int column = ctx.expression().getStart().getCharPositionInLine();
-            _errors.add(new Exception("Error en tipo: '"+type+"' no aplicable '-' @line: "+line+" @column: "+column));
-            return null;
-        }
-        
-        _interCode.toMinus();
-        
-        Object[] returnO = {"int",""};
-        return returnO;
-    }
-    
-    public Object visitExpNot (ExpNotContext ctx){
-        Object obj = visit(ctx.expression());
-        
-        if (obj == null){
-            int line = ctx.expression().getStart().getLine();
-            int column = ctx.expression().getStart().getCharPositionInLine();
-            _errors.add(new Exception("Error en definicion de expression @line: "+line+" @column: "+column));
-            return null;
-        }
-        
-        Object[] type_code = (Object[])obj;
-        String type = (String) type_code[0];//guarda el tipo del expression
-        String code = (String) type_code[1];//guarda el codigo intermedio del expression
-        
-        if (!type.equals("boolean")){
-            int line = ctx.expression().getStart().getLine();
-            int column = ctx.expression().getStart().getCharPositionInLine();
-            _errors.add(new Exception("Error en tipo: '"+type+"' no aplicable '!' @line: "+line+" @column: "+column));
-            return null;
-        }
-        
-        
-        
-        Object[] returnO = {"boolean",""};
-        return returnO;
-    }
-    
-    public Object visitExpPexp (ExpPexpContext ctx){
-        return visit(ctx.expression());
-    }
-    
-    public Object visitMethodCall (MethodCallContext ctx){
-        String id = ctx.ID().getText();//nombre
-        Method mt = _scopes.get(0).hasMethodDef(id);
-        
-        if (mt == null){
-            int line = ctx.getStart().getLine();
-            int column = ctx.getStart().getCharPositionInLine();
-            _errors.add(new Exception("Error metodo '"+id+"' no definido @line: "+line+" @column: "+column));
-            return null;
-        }
-        
-        ArrayList<String> params = new ArrayList();
-        for (ArgContext arg: ctx.arg()){
-            Object obj = visit(arg);
+    public Object visitUnaryMinus2 (UnaryMinus2Context ctx){
+        if (ctx.unaryMinus2() != null){
+            Object obj = visit(ctx.unaryMinus2());
             if (obj == null){
-                int line = arg.getStart().getLine();
-                int column = arg.getStart().getCharPositionInLine();
-                _errors.add(new Exception("Error en definicion de parametro @line: "+line+" @column: "+column));
+                int line = ctx.unaryMinus2().getStart().getLine();
+                int column = ctx.unaryMinus2().getStart().getCharPositionInLine();
+                _errors.add(new Exception("Error en definicion de unaryMinus2 @line: "+line+" @column: "+column));
                 return null;
             }
-            
-            Object[] type_code = (Object[])obj;
-            String type = (String) type_code[0];//guarda el tipo del expression
-            String code = (String) type_code[1];//guarda el codigo intermedio del expression
-            params.add(type);
-            _interCode.pushParam();
+            getInterCode().toNot();
+            return obj;
         }
         
-        if (params.size() != mt.getParams().size()){
-            int line = ctx.getStart().getLine();
-            int column = ctx.getStart().getCharPositionInLine();
-            _errors.add(new Exception("Error en definicion de parametros, se esperan "+mt.getParams().size()+"' parametros @line: "+line+" @column: "+column));
-            return null;
-        }
+        return visitChildren(ctx);
+    }
+    
+    public Object visitAtom2 (Atom2Context ctx){
+        if (ctx.condOp() != null) return visit(ctx.condOp());
         
-        int i = 0;
-        for (Variable v: mt.getParams()){
-            String typeParam = params.get(i);
-            String typeVar = v.getVarType();
-            if (typeVar.equals("struct")){
-                typeVar += ((StructVar)v).getStructID().getStructID();
-            }
-            if (v.isArray()) typeVar += "array";
-            
-            if (!typeParam.equals(typeVar)){//si no son iguales
-                int line = ctx.getStart().getLine();
-                int column = ctx.getStart().getCharPositionInLine();
-                _errors.add(new Exception("Error en definicion de parametros, se esperaba "+typeVar+"', se obtuvo '"+typeParam+"' @line: "+line+" @column: "+column));
-                return null;
-            }
-            i++;
-        }
-        
-        
-        
-        _interCode.callMethod(id);
-        
-        Object[] returnO = {mt.getMetType(),""};
-        return returnO;
+        return visitChildren(ctx);
     }
     
     public Object visitPlusOrMinus (PlusOrMinusContext ctx){
@@ -1336,7 +1364,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             return null;
         }
         
-        _interCode.setLastAsLeft();
+        getInterCode().pushTempActual();
+        //getInterCode().setLastAsLeft();
         
         Object obj2 = visit(ctx.multOrDiv());
         if (obj2 == null){
@@ -1346,7 +1375,9 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             return null;
         }
         
-        _interCode.setLastAsRight();
+        getInterCode().setLastAsRight();
+        getInterCode().popTempActual();
+        getInterCode().setLastAsLeft();
         
         Object[] type_code1 = (Object[])obj1;
         String type1 = (String) type_code1[0];//guarda el tipo del expression
@@ -1372,7 +1403,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         
         
         
-        _interCode.buildOperation(ctx.getChild(1).getText());
+        getInterCode().buildOperation(ctx.getChild(1).getText());
         
         
         Object[] returnO = {"int",""};
@@ -1391,7 +1422,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             return null;
         }
         
-        _interCode.setLastAsLeft();
+        getInterCode().pushTempActual();
+        //getInterCode().setLastAsLeft();
         
         Object obj2 = visit(ctx.pow());
         if (obj2 == null){
@@ -1401,7 +1433,9 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             return null;
         }
         
-        _interCode.setLastAsRight();
+        getInterCode().setLastAsRight();
+        getInterCode().popTempActual();
+        getInterCode().setLastAsLeft();
         
         Object[] type_code1 = (Object[])obj1;
         String type1 = (String) type_code1[0];//guarda el tipo del expression
@@ -1427,7 +1461,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         
         
         
-        _interCode.buildOperation(ctx.getChild(1).getText());
+        getInterCode().buildOperation(ctx.getChild(1).getText());
         
         Object[] returnO = {"int",""};
         return returnO;
@@ -1446,7 +1480,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                 _errors.add(new Exception("Error en definicion de unaryMinus @line: "+line+" @column: "+column));
                 return null;
             }
-            _interCode.toMinus();
+            getInterCode().toMinus();
+            return obj;
         }else{
             Object obj = visit(ctx.atom());
             if (obj == null){
@@ -1455,12 +1490,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
                 _errors.add(new Exception("Error en definicion de atom @line: "+line+" @column: "+column));
                 return null;
             }
-        }
-        
-        
-        Object[] returnO = {"int",""};
-        return returnO;
-        
+            return obj;
+        }        
     }
     
     public Object visitAtom (AtomContext ctx){
@@ -1470,19 +1501,19 @@ public class MyVisitor extends decafBaseVisitor<Object> {
     }
     
     public Object visitBool_literal (Bool_literalContext ctx){
-        _interCode.setBoolLiteral(ctx.getText());
+        getInterCode().setBoolLiteral(ctx.getText());
         Object[] returnO = {"boolean",ctx.getText()};
         return returnO;
     }
     
     public Object visitChar_literal (Char_literalContext ctx){
-        _interCode.setCharLiteral(ctx.getText());
+        getInterCode().setCharLiteral(ctx.getText());
         Object[] returnO = {"char",ctx.getText()};
         return returnO;
     }
     
     public Object visitInt_literal (Int_literalContext ctx){
-        _interCode.setIntLiteral(ctx.getText());
+        getInterCode().setIntLiteral(ctx.getText());
         Object[] returnO = {"int",ctx.getText()};
         return returnO;
     }
@@ -1539,5 +1570,19 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             st += _errors.pop().toString()+"\n";
         }
         return st;
+    }
+
+    /**
+     * @return the _interCode
+     */
+    public IntermediateCodeBuilder getInterCode() {
+        return _interCode;
+    }
+
+    /**
+     * @param _interCode the _interCode to set
+     */
+    public void setInterCode(IntermediateCodeBuilder _interCode) {
+        this._interCode = _interCode;
     }
 }

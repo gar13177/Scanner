@@ -62,24 +62,41 @@ location : ID #locationID
          |ID '[' expression ']' #locationExp
          |ID '[' expression ']' '.' location #locationExplocation ;//para despues
 
-expression : location #expLocation
-           | methodCall #expMethodCall
-           | literal #expLiteral
-           | calc_op #expCalc
-           | expression op expression #expOPExp
-           | '-' expression #expMinus
-           | '!' expression #expNot
-           | '('expression')' #expPexp ;
+expression : condOp;
+           //location #expLocation
+           //| methodCall #expMethodCall
+           //| literal #expLiteral
+           //| plusOrMinus #expCalc
+           //| condOp #expCond
+           //| expression cond_op expression #expCondExp
+           //| expression op expression #expOPExp
+           //| '-' expression #expMinus
+           //| '!' expression #expNot
+           //| '('expression')' #expPexp ;
 
 methodCall :    ID '(' (arg (',' arg)*)? ')' ;
 
 arg :   expression;
 
 op:  rel_op 
-  | eq_op 
-  | cond_op  ;
+  | eq_op  ;
 
-calc_op: plusOrMinus;
+condOp: condOp cond_op assignOp
+       | assignOp;
+
+assignOp: assignOp op pow2
+        | pow2;
+
+pow2: unaryMinus2;
+
+unaryMinus2 : '!' unaryMinus2
+            | atom2;
+
+atom2 : '(' condOp ')'
+     | literal
+     | location
+     | methodCall
+     | plusOrMinus;
 
 plusOrMinus : plusOrMinus '+' multOrDiv
             | plusOrMinus '-' multOrDiv

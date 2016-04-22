@@ -92,7 +92,7 @@ public class queryView extends JFrame implements ActionListener{
 	JMenuItem mntmOpen, mntmSave, mntmSaveAs, mntmUndo, mntmRedo, mntmRun, mntmComment, mntmPrueba;
 	JButton btnOpenFile, btnSave, btnRun, btnUndo, btnRedo, btnDelete, btnVerbose;
 	//JTextArea textArea;
-	JTextPane textArea, dataOutputArea, dataReadArea, dataVerbose;
+	JTextPane textArea, dataOutputArea, dataReadArea, dataVerbose, interCode;
 	JTextField status, dataBaseUse;
 	JSplitPane splitPane1;
 	JTabbedPane tabbedPane;
@@ -404,7 +404,15 @@ public class queryView extends JFrame implements ActionListener{
                 
                 treeDisplay = new JScrollPane();
                 tabbedPane.addTab("Parse Tree", null, treeDisplay, null);
-		
+                
+                
+                
+                JScrollPane scrollPaned = new JScrollPane();
+                tabbedPane.addTab("Intermediate Code",null,scrollPaned,null);
+                interCode = new JTextPane();
+                interCode.setEditable(false);
+                scrollPaned.setViewportView(interCode);
+                
 		
 		
 		//textArea = new JTextArea();
@@ -831,6 +839,8 @@ public class queryView extends JFrame implements ActionListener{
                     if (semantic_checker.getError().size()>0){
                         dataOutputArea.setText(semantic_checker.toStringError()+"\n"+calculateTime(estimatedTime));
                     }else{
+                        
+                        interCode.setText(semantic_checker.getInterCode().toString());
                         dataOutputArea.setText("Terminado"+"\n"+calculateTime(estimatedTime));
                     }
                     
