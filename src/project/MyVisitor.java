@@ -59,10 +59,12 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             if (mt.getParams().size()>0){
                 _errors.add(new Exception("main espera parametros, no deberia"));
             }
-            
+            getInterCode().buildReturnValues();
+            getInterCode().finishBuilding();
             return null;
         }
         //else: crear codigo intermedio
+        
         return null;
     }
     
@@ -170,12 +172,12 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         }
         
         if (ctx.getChild(0).getText().equals("char")){
-            Object[] obj = {"char", 1};
+            Object[] obj = {"char", 4};
             return obj;
         }
         
         if (ctx.getChild(0).getText().equals("boolean")){
-            Object[] obj = {"boolean", 1};
+            Object[] obj = {"boolean", 4};
             return obj;
         }
         
@@ -342,6 +344,9 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             errores = true;
         }
         
+        if (!mtn.getMetType().equals("void")){//si no es void, se crea variable de retorno
+            getInterCode().setNewReturn();
+        }
         //asignamos las cosas nuevas al metodo
         mt.setReturn(true);
         mt.setVars(nscope.getVars());
