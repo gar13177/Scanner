@@ -18,15 +18,19 @@ public class IntermediateCodeBuilder {
     private String temp_var = "r";
     private int minimum_register = 4;
     private int maximum_register = 13;
+    private int param_size = 0;
+    private int param_extend = 56;
     private int sp_actual = 0;//posicion del sp respecto del inicio de la subrutina
     private boolean has_att = false;//
     private int temp_var_number = minimum_register;
     private int while_count =0;
     private int if_count=0;
-    private String heather = ".text\n.align 2\n .global main\n.type main, %function\nmain:\nstmfd sp!,{lr}\nbl main_init:\n"+
+    private boolean needs_value = false;
+    private String heather = ".text\n.align 2\n .global main\n.type main, %function\nmain:\nstmfd sp!,{lr}\nbl main_init\n"+
             "mov r3,#0\nmov r0,#0\nldmfd sp!,{lr}\nbx lr\n";
     
     private Stack<String> return_values = new Stack();
+    private Stack<String> strings_call = new Stack();
     
     private Stack<String> while_count_index = new Stack();//aqui meto el indice de la etiqueta
     private Stack<String> if_count_index = new Stack();//aqui meto el indice de la etiqueta
@@ -53,7 +57,7 @@ public class IntermediateCodeBuilder {
     
     public void buildReturn(){
         getNewRegister();//creamos un nuevo registro libre
-        to_build_code += "ldr "+temp_var+""+temp_var_number+",="+method_name+"return_value\n";
+        to_build_code += "ldr "+temp_var+""+temp_var_number+",="+method_name+"_return_value\n";
         to_build_code += "str "+last_used_temp+",["+temp_var+""+temp_var_number+"]\n";
         to_build_code += "b "+method_name+"_end_p\n";
     }
@@ -84,10 +88,30 @@ public class IntermediateCodeBuilder {
     
     public void setOffset(int off){
         offset = off;
+        
+        if (offset < param_size){
+            int posicion_relativa = sp_actual+param_extend+(param_size-offset)-4;
+            String op = "add "+temp_var+""+temp_var_number+",sp,#"+posicion_relativa;
+            to_build_code += op+"\n";//cargamos la operacion al codigo
+        }else if (offset - param_size > sp_actual){
+            int posicion_relativa = offset - param_size - sp_actual+4;//sumo 4 porque si piden la direccion sp[30], el elemento ocupara otros 4 bytes
+            String op = "sub sp, sp, #"+posicion_relativa+"\n";
+            sp_actual += posicion_relativa;//cambiamos la posicion actual del sp
+            op += "add "+temp_var+""+temp_var_number+",sp,#4";//me quede a una posicion de la que quiero
+            to_build_code += op+"\n";//cargamos la operacion al codigo
+        }else{
+            int posicion_relativa = sp_actual - (offset-param_size);
+            String op = "add "+temp_var+""+temp_var_number+",sp,#"+posicion_relativa;
+            to_build_code += op+"\n";//cargamos la operacion al codigo
+        }
+        
+        last_used_temp = temp_var+""+temp_var_number;//cargamos la ultima variable usada
+        getNewRegister();
+        
     }
     
     public void setOffset(String off){
-        offset = Integer.parseInt(off);
+        setOffset(Integer.parseInt(off));
     }
     
     public void addOffset(int off){
@@ -105,8 +129,13 @@ public class IntermediateCodeBuilder {
         getNewRegister();*/
         getNewRegister();//obtenemos un registro vacio
         String str = "ldr "+temp_var+""+temp_var_number+",=the_global_variables\n";
+        
         str += "add "+temp_var+""+temp_var_number+","+last_used_temp+"\n";
         to_build_code += str;
+        
+        if (needs_value){//
+            to_build_code += "ldr "+temp_var+""+temp_var_number+",["+temp_var+""+temp_var_number+"]\n";
+        }
         
         last_used_temp = temp_var+""+temp_var_number;//"gp["+last_used_temp+"]";
         getNewRegister();
@@ -118,7 +147,10 @@ public class IntermediateCodeBuilder {
         last_used_temp = temp_var+""+temp_var_number;//cargamos la ultima variable usada
         getNewRegister();*/
         
-        last_used_temp = "lp["+last_used_temp+"]";
+                
+        if (needs_value){//
+            to_build_code += "ldr "+last_used_temp+",["+last_used_temp+"]\n";
+        }
     }
     
     
@@ -128,6 +160,8 @@ public class IntermediateCodeBuilder {
         while_count =0;
         if_count=0;
         to_build_code = "";
+        param_size = 0;
+        has_att = false;
     }
     
     public void newMethod(String mn){
@@ -139,9 +173,14 @@ public class IntermediateCodeBuilder {
     
     public void buildMethod(){
         to_build_code += method_name+"_end_p:\n";
-        to_build_code += "pop {pc,r0-r12}\n\n\n";
+        to_build_code += "add sp, sp,#"+sp_actual+"\n";
+        to_build_code += "pop {lr,r0-r12}\n";
+        if (param_size > 0){
+            to_build_code += "add sp, sp,#"+param_size+"\n";
+        }
+        to_build_code += "mov pc, lr\n";
         //to_build_code += method_name+"_end\n\n\n";
-        code += to_build_code;
+        code += to_build_code+"\n\n";
     }
     
     public void newWhile(){
@@ -332,7 +371,7 @@ public class IntermediateCodeBuilder {
     }
     
     public void buildEqual(){
-        String st = "mov "+equals +","+left+"\n";
+        String st = "str "+left+",["+equals +"]\n";
         to_build_code += st;
     }
     
@@ -399,6 +438,59 @@ public class IntermediateCodeBuilder {
         }
         
         code += "the_global_variables:\n";
+    }
+    
+    public void buildStringValue(){
+        code+=".data\n" +
+                ".align 2\n";
+        int i = 0;
+        while (!strings_call.empty()){
+            code += "string_label"+i+":\t.asciz \""+strings_call.pop()+"\"\n";
+            i++;
+        }
+    }
+
+    /**
+     * @return the needs_value
+     */
+    public boolean isNeeds_value() {
+        return needs_value;
+    }
+
+    /**
+     * @param needs_value the needs_value to set
+     */
+    public void setNeeds_value(boolean needs_value) {
+        this.needs_value = needs_value;
+    }
+    
+    public void addNewString(String string){
+        string = string.substring(1, string.length()-1);
+        strings_call.push(string);
+    }
+    
+    public void setNewPrint(boolean has_param){
+        String str = "";
+        if (has_param)
+            str = "mov r1,"+left+"\n";
+        str += "ldr r0,=string_label"+(strings_call.size()-1)+"\n";
+        str += "bl printf\n";
+        to_build_code += str;
+    }
+
+    /**
+     * @return the param_size
+     */
+    public int getParam_size() {
+        return param_size;
+    }
+
+    /**
+     * @param param_size the param_size to set
+     */
+    public void setParam_size(int param_size) {
+        this.param_size = param_size;
+        if (param_size >0) has_att = true;
     }
     
 }

@@ -54,7 +54,8 @@ statement : 'if' '(' expression ')' block ( 'else' block )? #statementIf
            //| methodCall ';' #statementMethod
            | block  #statementBlock
            | location '=' expression ';' #statementAsign
-           | expression ';'  #statementExp;
+           | expression ';'  #statementExp
+           | 'print' '(' STRING (',' expression)? ')' ';' #statementPrint;
 
 
 location : ID #locationID
@@ -137,6 +138,7 @@ fragment LETTER: ('a'..'z'|'A'..'Z') ;
 fragment DIGIT : ('0'..'9') ;
 ID : LETTER( LETTER | DIGIT)* ;
 NUM: DIGIT(DIGIT)* ;
+STRING : '\"' ( ~['\r\n\\] | '\\' ['\\] )* '\"';
 CHAR : '\'' ( ~['\r\n\\] | '\\' ['\\] ) '\'';
 WS : [ \t\r\n\f]+  ->channel(HIDDEN);
 COMMENTS: '//' ~('\r' | '\n' )*  -> channel(HIDDEN);

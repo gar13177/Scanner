@@ -19,18 +19,6 @@ public interface decafListener extends ParseTreeListener {
 	 */
 	void exitStructDeclaration(@NotNull decafParser.StructDeclarationContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code expPexp}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 */
-	void enterExpPexp(@NotNull decafParser.ExpPexpContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code expPexp}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 */
-	void exitExpPexp(@NotNull decafParser.ExpPexpContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link decafParser#methodDeclaration}.
 	 * @param ctx the parse tree
 	 */
@@ -249,6 +237,18 @@ public interface decafListener extends ParseTreeListener {
 	 */
 	void exitChar_literal(@NotNull decafParser.Char_literalContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code statementPrint}
+	 * labeled alternative in {@link decafParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterStatementPrint(@NotNull decafParser.StatementPrintContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code statementPrint}
+	 * labeled alternative in {@link decafParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitStatementPrint(@NotNull decafParser.StatementPrintContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link decafParser#parameterType}.
 	 * @param ctx the parse tree
 	 */
@@ -281,6 +281,16 @@ public interface decafListener extends ParseTreeListener {
 	 */
 	void exitOp(@NotNull decafParser.OpContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link decafParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void enterExpression(@NotNull decafParser.ExpressionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link decafParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void exitExpression(@NotNull decafParser.ExpressionContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link decafParser#plusOrMinus}.
 	 * @param ctx the parse tree
 	 */
@@ -290,18 +300,6 @@ public interface decafListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitPlusOrMinus(@NotNull decafParser.PlusOrMinusContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code expMethodCall}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 */
-	void enterExpMethodCall(@NotNull decafParser.ExpMethodCallContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code expMethodCall}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 */
-	void exitExpMethodCall(@NotNull decafParser.ExpMethodCallContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link decafParser#unaryMinus2}.
 	 * @param ctx the parse tree
@@ -367,18 +365,6 @@ public interface decafListener extends ParseTreeListener {
 	 */
 	void exitLocationIDlocation(@NotNull decafParser.LocationIDlocationContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code expLocation}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 */
-	void enterExpLocation(@NotNull decafParser.ExpLocationContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code expLocation}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 */
-	void exitExpLocation(@NotNull decafParser.ExpLocationContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link decafParser#multOrDiv}.
 	 * @param ctx the parse tree
 	 */
@@ -411,30 +397,6 @@ public interface decafListener extends ParseTreeListener {
 	 */
 	void exitLocationID(@NotNull decafParser.LocationIDContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code expCalc}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 */
-	void enterExpCalc(@NotNull decafParser.ExpCalcContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code expCalc}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 */
-	void exitExpCalc(@NotNull decafParser.ExpCalcContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code expLiteral}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 */
-	void enterExpLiteral(@NotNull decafParser.ExpLiteralContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code expLiteral}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 */
-	void exitExpLiteral(@NotNull decafParser.ExpLiteralContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link decafParser#unaryMinus}.
 	 * @param ctx the parse tree
 	 */
@@ -444,18 +406,6 @@ public interface decafListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitUnaryMinus(@NotNull decafParser.UnaryMinusContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code expCond}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 */
-	void enterExpCond(@NotNull decafParser.ExpCondContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code expCond}
-	 * labeled alternative in {@link decafParser#expression}.
-	 * @param ctx the parse tree
-	 */
-	void exitExpCond(@NotNull decafParser.ExpCondContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link decafParser#atom}.
 	 * @param ctx the parse tree

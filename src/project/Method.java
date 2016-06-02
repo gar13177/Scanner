@@ -143,4 +143,12 @@ public class Method {
         }
     }
     
+    public int getVarsSize(){
+        int size = 0;
+        for (Variable v: _vars){
+            size += v.getTotalSize();
+        }
+        return size;
+    }
+    
 }

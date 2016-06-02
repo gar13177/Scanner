@@ -59,6 +59,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             if (mt.getParams().size()>0){
                 _errors.add(new Exception("main espera parametros, no deberia"));
             }
+            getInterCode().buildStringValue();
             getInterCode().buildReturnValues();
             getInterCode().finishBuilding();
             return null;
@@ -309,6 +310,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         Method mt = new Method(id,type);
         mt.setParams(parameters);//agregamos parametros
         mt.setParamsAsVars();//agregamos los parametros como variables locales
+        int tamanio_de_parametro = mt.getVarsSize();
+        getInterCode().setParam_size(tamanio_de_parametro);
         
         LinkedHashSet<Method> tempMethods = new LinkedHashSet();
         tempMethods.addAll(_scopes.peek().getMethods());//guardamos los metodos pervios
@@ -601,7 +604,9 @@ public class MyVisitor extends decafBaseVisitor<Object> {
     }
     
     public Object visitStatementAsign (StatementAsignContext ctx){
+        getInterCode().setNeeds_value(false);
         Object objL = visit(ctx.location());
+        
         if (objL == null){
             int line = ctx.location().getStart().getLine();
             int column = ctx.location().getStart().getCharPositionInLine();
@@ -615,6 +620,7 @@ public class MyVisitor extends decafBaseVisitor<Object> {
         //location 
         getInterCode().pushTempActual();
         
+        getInterCode().setNeeds_value(true);
         Object objE = visit(ctx.expression());
         if (objE == null){
             int line = ctx.expression().getStart().getLine();
@@ -645,7 +651,35 @@ public class MyVisitor extends decafBaseVisitor<Object> {
     }
     
     public Object visitStatementExp (StatementExpContext ctx){
+        getInterCode().setNeeds_value(true);
         return visit(ctx.expression());//retornamos valor de expression
+    }
+    
+    public Object visitStatementPrint(StatementPrintContext ctx){
+        
+        String value = ctx.STRING().getText();
+        System.out.println(value);
+        _interCode.addNewString(value);
+        
+        boolean param = false;
+        
+        if (ctx.expression() != null){
+            getInterCode().setNeeds_value(true);
+            Object obj = visit(ctx.expression());
+            if (obj == null){
+                int line = ctx.expression().getStart().getLine();
+                int column = ctx.expression().getStart().getCharPositionInLine();
+                _errors.add(new Exception("Error en expression @line: "+line+" @column: "+column));
+                return null;
+            }
+            getInterCode().setLastAsLeft();
+            param = true;
+        }
+        
+        getInterCode().setNewPrint(param);
+        
+        Object[] returnO = {"void",""};
+        return returnO;
     }
     
     public Object visitLocationID(LocationIDContext ctx){
@@ -666,7 +700,8 @@ public class MyVisitor extends decafBaseVisitor<Object> {
             getInterCode().setGlobalPointer();
         }else{
             offset = _scopes.peek().offsetOfVar(ctx.ID().getText());//extraigo offset desde inicio
-            getInterCode().setIntLiteral(""+offset);
+            //getInterCode().setIntLiteral(""+offset);
+            getInterCode().setOffset(offset);//regresar 
             getInterCode().setLocalPointer();
             
         }
@@ -1589,5 +1624,10 @@ public class MyVisitor extends decafBaseVisitor<Object> {
      */
     public void setInterCode(IntermediateCodeBuilder _interCode) {
         this._interCode = _interCode;
+    }
+    
+    public Object visitExpression(ExpressionContext ctx){
+        getInterCode().setNeeds_value(true);
+        return visitChildren(ctx);
     }
 }

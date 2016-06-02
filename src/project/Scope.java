@@ -137,6 +137,8 @@ public class Scope {
         return offset;
     }
     
+    
+    
     public Method hasMethodDef(String ID){
         for (Method mt: _methods){
             if (mt.getMetID().equals(ID)){
